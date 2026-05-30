@@ -1333,6 +1333,9 @@ requires-dist = [
     { name = "transformers", specifier = ">=5.9.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0.0" }]
+
 [[package]]
 name = "torch"
 version = "2.12.0"
