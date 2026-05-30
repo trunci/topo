@@ -6,3 +6,4 @@ results/*.npy
 results/*.png
 .cache/
 hf_cache/
+!results/confound_report.txt

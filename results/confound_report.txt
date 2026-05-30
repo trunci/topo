@@ -1,0 +1,6 @@
+=== shape === (2688, 14)
+
+[seq_len] mean 1-hop=50.00  mean 2-hop=52.50  mean diff(2-1)=2.500  std=2.887
+[seq_len] pairs where 2hop longer: 2 / 4 ; identical length: 2
+[seq_len/kinship] mean diff(2-1)=0.000  std=0.000  n=2
+[seq_len/ordering] mean diff(2-1)=5.000  std=0.000  n=2
