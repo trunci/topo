@@ -1,0 +1,40 @@
+{
+  "wikitext_ppl_by_method": {
+    "dmt": 70365.61547052207,
+    "magnitude": 123.37834444394166,
+    "random": 189756.56051257442,
+    "unpruned": 51.274249726898496,
+    "window": 12252.728429252245
+  },
+  "wikitext_n_examples": 12,
+  "wikitext_dmt_vs_baseline_loss": {
+    "magnitude": {
+      "n": 12,
+      "p": 0.00048828125,
+      "median_diff": 6.212229013442993
+    },
+    "random": {
+      "n": 12,
+      "p": 0.38037109375,
+      "median_diff": -0.1863093376159668
+    },
+    "window": {
+      "n": 12,
+      "p": 0.0009765625,
+      "median_diff": 1.6238799095153809
+    }
+  },
+  "dmt_beats_magnitude_ppl": false,
+  "dmt_beats_all_baselines_ppl": false,
+  "dmt_mean_sparsity": 0.18508602489671286,
+  "kinship_accuracy_by_method": {
+    "dmt": 0.0,
+    "magnitude": 0.0,
+    "random": 0.0,
+    "unpruned": 0.0,
+    "window": 0.0
+  },
+  "kinship_n_examples": 12,
+  "dmt_ge_magnitude_accuracy": true,
+  "verdict": "NULL: DMT does not beat magnitude on WikiText PPL."
+}
