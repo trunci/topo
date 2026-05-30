@@ -132,7 +132,11 @@ non-kept (and non-causal) entries are 0; the unpruned control reproduces the pas
   `data_gen` (kinship pairs) unchanged.
 - Datasets: a small WikiText-2 slice + kinship pairs only. MMLU / MuSiQue / HotpotQA /
   2WikiMultihop deferred until DMT shows a win (matches the staged philosophy of the spike).
-- Single model (Qwen2.5-0.5B-Instruct), MPS, float32, eager attention.
+- **Two models, by metric:** WikiText-2 perplexity is measured on the **base** model
+  `Qwen/Qwen2.5-0.5B` (more standard for language-modeling PPL); kinship accuracy uses the
+  **instruct** model `Qwen/Qwen2.5-0.5B-Instruct` (chat-formatted, matches the spike). Both
+  are the same 24L×14H architecture, MPS, float32, eager attention. The two-pass pruning
+  harness is model-agnostic and runs identically on each.
 - Compute target: a few hundred WikiText windows + 120 kinship prompts × ~5 methods, minutes
   to low-tens-of-minutes on the M3 Pro. No GPU.
 
