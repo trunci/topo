@@ -12,17 +12,23 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 
 
-def load_model(device: str | None = None):
+def load_named(model_name: str, device: str | None = None):
+    """Load any causal-LM by name with float32 + eager attention (so attentions work)."""
     if device is None:
         device = "mps" if torch.backends.mps.is_available() else "cpu"
-    tok = AutoTokenizer.from_pretrained(MODEL_NAME)
+    tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
+        model_name,
         torch_dtype=torch.float32,          # float32 for stable eager attention on MPS
         attn_implementation="eager",
     )
     model.to(device).eval()
     return model, tok, device
+
+
+def load_model(device: str | None = None):
+    """Backwards-compatible loader for the instruct model used by the spike."""
+    return load_named(MODEL_NAME, device=device)
 
 
 def format_prompt(tok, text: str) -> str:
