@@ -21,7 +21,7 @@ def kinship_eval_items(n_per_family: int = 15, seed: int = 0):
 def wikitext_lines(n: int = 50, min_chars: int = 100):
     """Return the first n WikiText-2 test lines with at least min_chars characters."""
     from datasets import load_dataset
-    ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
+    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
     out = []
     for row in ds:
         t = row["text"].strip()
