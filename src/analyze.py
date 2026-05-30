@@ -73,7 +73,7 @@ def main(in_path: str = "results/spike.parquet"):
         n_heads = int(df["head"].max() + 1)
         grid = np.full((n_layers, n_heads), np.nan)
         for _, r in res.iterrows():
-            grid[int(r.layer), int(r.head)] = -np.log10(max(r.p_adj, 1e-12))
+            grid[int(r["layer"]), int(r["head"])] = -np.log10(max(r["p_adj"], 1e-12))
         plt.figure(figsize=(8, 6))
         plt.imshow(grid, aspect="auto", cmap="viridis")
         plt.colorbar(label="-log10(p_adj)")
@@ -84,12 +84,12 @@ def main(in_path: str = "results/spike.parquet"):
 
         # distribution plot for the single most discriminating head
         best = res.sort_values("p_adj").iloc[0]
-        g = df[(df.layer == best.layer) & (df.head == best.head)]
+        g = df[(df["layer"] == best["layer"]) & (df["head"] == best["head"])]
         plt.figure(figsize=(6, 4))
         for hop, sub in g.groupby("hop"):
             plt.hist(sub[METRIC], bins=20, alpha=0.5, label=f"{hop}-hop")
         plt.legend(); plt.xlabel(METRIC)
-        plt.title(f"L{int(best.layer)}H{int(best.head)} (p_adj={best.p_adj:.1e})")
+        plt.title(f"L{int(best['layer'])}H{int(best['head'])} (p_adj={best['p_adj']:.1e})")
         plt.tight_layout(); plt.savefig("results/best_head_dist.png", dpi=120)
         print("Saved results/best_head_dist.png")
 

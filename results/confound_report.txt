@@ -1,6 +1,13 @@
-=== shape === (2688, 14)
+=== shape === (40320, 14)
 
-[seq_len] mean 1-hop=50.00  mean 2-hop=52.50  mean diff(2-1)=2.500  std=2.887
-[seq_len] pairs where 2hop longer: 2 / 4 ; identical length: 2
-[seq_len/kinship] mean diff(2-1)=0.000  std=0.000  n=2
-[seq_len/ordering] mean diff(2-1)=5.000  std=0.000  n=2
+[seq_len] mean 1-hop=49.88  mean 2-hop=52.53  mean diff(2-1)=2.650  std=2.692
+[seq_len] pairs where 2hop longer: 30 / 60 ; identical length: 30
+[seq_len/kinship] mean diff(2-1)=0.000  std=0.000  n=30
+[seq_len/ordering] mean diff(2-1)=5.300  std=0.466  n=30
+
+[direction] sig heads=196  of which 2hop>1hop: 129  2hop<1hop: 67
+[direction] => two-sided structure is evidence AGAINST a pure length artifact
+
+[length-normalized metric persist_per_tok] sig heads after BH = 197
+[kinship-only] sig heads after BH = 169 (of 336 tested)
+[ordering-only] sig heads after BH = 207 (of 336 tested)
