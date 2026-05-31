@@ -41,13 +41,23 @@ def _partial_spearman(x, y, controls):
     return float(rho), float(p)
 
 
-def compute_stats(parquet_path: str, out_path: str) -> dict:
-    df = pd.read_parquet(parquet_path)
-    y = df["induction_score"].to_numpy()
-    h1 = df["h1_persistence"].to_numpy()
+def residual_test(target, feature, controls):
+    """Core nested-OLS residual-information test (reused by Exp 3 and Exp 4).
 
-    Xb = sm.add_constant(df[CONTROLS].to_numpy())
-    Xf = sm.add_constant(df[CONTROLS + ["h1_persistence"]].to_numpy())
+    target   : 1-D array, the value to predict (a circuit score).
+    feature  : 1-D array, the candidate predictor tested for residual signal (h1).
+    controls : list of 1-D arrays, the first-order baselines to control for.
+
+    Returns a dict with baseline/full R^2, delta_r2, nested-F (stat, p), the
+    feature's coefficient + p in the full model, partial Spearman(feature, target
+    | controls) and raw Spearman, plus n and the pre-registered `adds_power` flag.
+    """
+    y = np.asarray(target, dtype=float)
+    feat = np.asarray(feature, dtype=float)
+    C = np.column_stack([np.asarray(c, dtype=float) for c in controls])
+
+    Xb = sm.add_constant(C)
+    Xf = sm.add_constant(np.column_stack([C, feat]))
 
     base = sm.OLS(y, Xb).fit()
     full = sm.OLS(y, Xf).fit()
@@ -56,21 +66,58 @@ def compute_stats(parquet_path: str, out_path: str) -> dict:
     full_r2 = float(full.rsquared)
     delta_r2 = full_r2 - baseline_r2
 
-    # Nested-model F-test for the added h1 term.
+    # Nested-model F-test for the added feature term.
     aov = anova_lm(base, full)
     f_stat = float(aov["F"].iloc[-1])
     f_pvalue = float(aov["Pr(>F)"].iloc[-1])
 
-    # h1 coefficient is the LAST predictor in the full model (after the const).
-    h1_coef = float(full.params[-1])
-    h1_coef_p = float(full.pvalues[-1])
+    # feature coefficient is the LAST predictor in the full model (after const).
+    coef = float(full.params[-1])
+    coef_p = float(full.pvalues[-1])
 
-    partial_rho, partial_p = _partial_spearman(
-        h1, y, [df[c].to_numpy() for c in CONTROLS]
-    )
-    raw_rho, raw_p = spearmanr(h1, y)
+    partial_rho, partial_p = _partial_spearman(feat, y, list(controls))
+    raw_rho, raw_p = spearmanr(feat, y)
 
     adds_power = bool(delta_r2 >= DELTA_R2_FLOOR and f_pvalue < ALPHA)
+    return {
+        "n": int(len(y)),
+        "baseline_r2": baseline_r2,
+        "baseline_adj_r2": float(base.rsquared_adj),
+        "full_r2": full_r2,
+        "full_adj_r2": float(full.rsquared_adj),
+        "delta_r2": float(delta_r2),
+        "f_stat": f_stat,
+        "f_pvalue": f_pvalue,
+        "coef": coef,
+        "coef_p": coef_p,
+        "partial_spearman_rho": partial_rho,
+        "partial_spearman_p": partial_p,
+        "raw_spearman_rho": float(raw_rho),
+        "raw_spearman_p": float(raw_p),
+        "adds_power": adds_power,
+    }
+
+
+def compute_stats(parquet_path: str, out_path: str) -> dict:
+    df = pd.read_parquet(parquet_path)
+    y = df["induction_score"].to_numpy()
+    h1 = df["h1_persistence"].to_numpy()
+
+    r = residual_test(y, h1, [df[c].to_numpy() for c in CONTROLS])
+
+    baseline_r2 = r["baseline_r2"]
+    full_r2 = r["full_r2"]
+    delta_r2 = r["delta_r2"]
+    f_stat = r["f_stat"]
+    f_pvalue = r["f_pvalue"]
+    h1_coef = r["coef"]
+    h1_coef_p = r["coef_p"]
+    partial_rho = r["partial_spearman_rho"]
+    partial_p = r["partial_spearman_p"]
+    raw_rho = r["raw_spearman_rho"]
+    raw_p = r["raw_spearman_p"]
+
+    adds_power = r["adds_power"]
     if adds_power:
         verdict = ("GREEN: H1 persistence adds significant predictive power for "
                    "induction beyond first-order attention statistics.")
