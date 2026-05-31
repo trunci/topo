@@ -18,7 +18,7 @@ def _f(x, nd=2):
 
 
 def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
-          q: dict, qs: dict, qm: dict, h: dict, z: dict, za: dict) -> str:
+          q: dict, qs: dict, qm: dict, h: dict, z: dict, za: dict, zk: dict) -> str:
     # --- spike numbers ---
     nontriv_pct = _f(s["c1_nontriv_frac"] * 100, 1)
     n_sig = s["c2_n_sig"]
@@ -180,6 +180,20 @@ def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
     za_fied_fp = _f(za_fvh["f_pvalue"], 7)
     za_disc_rho = _f(za_dp["rho"], 3)
     za_disc_p = _f(za_dp["p"], 3)
+
+    # --- exp9 numbers (topological attribution + causal validation) ---
+    zk_a = zk["part_a_attribution"]["per_saliency"]
+    zk_b = zk["part_b_causal"]
+    zk_headline = zk["headline_verdict"]
+    zk_a_verdict = zk["part_a_attribution"]["verdict"]
+    zk_mag_auc = _f(zk_a["magnitude"]["mean_auc"], 3)
+    zk_cyc_auc = _f(zk_a["cycle_participation"]["mean_auc"], 3)
+    zk_shf_auc = _f(zk_a["sheaf_discord"]["mean_auc"], 3)
+    zk_b_verdict = zk_b["verdict"]
+    zk_b_shf = _f(zk_b["median_damage"]["sheaf"], 4)
+    zk_b_mag = _f(zk_b["median_damage"]["magnitude"], 4)
+    zk_b_shf_vs_rnd = _f(zk_b["sheaf_vs_random_p"], 4)
+    zk_b_shf_vs_mag = _f(zk_b["sheaf_vs_magnitude_p"], 3)
 
     return f"""# Topology of Attention — Consolidated Writeup
 
@@ -498,7 +512,45 @@ extra signal.
 
 ---
 
-## 12. Synthesis
+## 12. Result K — Topology vs the trivial baseline as a circuit attributor (Exp 9)
+
+The cleanest, confound-proof way to ask whether topology is *useful*: drop cross-example
+scalar regression (where sequence length confounded everything) and ask, **within a single
+fixed-length attention graph**, whether topology assigns high saliency to the **ground-truth
+induction copy edge** — and whether it beats the trivial **attention-magnitude** baseline,
+then whether the flagged edges are **causally** necessary. gpt2 + distilgpt2, induction
+heads, per-edge.
+
+**Part A — attribution (ROC-AUC at recovering the copy edge):**
+
+| saliency | mean AUC |
+|---|---|
+| attention magnitude (baseline) | {zk_mag_auc} |
+| cycle participation | {zk_cyc_auc} |
+| sheaf discord | {zk_shf_auc} |
+
+**Verdict: {zk_a_verdict}.** Attention magnitude is a near-perfect attributor
+({zk_mag_auc}); cycle-participation is at chance ({zk_cyc_auc}); sheaf-discord beats chance
+({zk_shf_auc}) but is decisively below magnitude. Topology does **not** beat the trivial
+baseline at localizing the circuit.
+
+**Part B — causal validation (damage = loss increase from ablating flagged edges):**
+sheaf-flagged edges damage induction more than random (median {zk_b_shf}, vs-random
+p = {zk_b_shf_vs_rnd}) → **{zk_b_verdict}** by the letter of the rule — but the effect is far
+weaker than magnitude ({zk_b_mag}) and does not beat it (p = {zk_b_shf_vs_mag}); cycle edges
+do not beat random.
+
+**Net for Exp 9 (headline {zk_headline}):** as a circuit *attributor*, **attention magnitude
+is simpler and better than topology** — at both localization and ablation. The one genuine
+topological positive is a small-but-real causal signal from sheaf-discord above random,
+which keeps the within-example "flow" idea barely alive while confirming it is not
+competitive with the trivial baseline. This is the project's sharpest negative-leaning
+result and the one most useful as a caution to the TDA-for-interpretability literature:
+*benchmark against attention magnitude, or the topology may be decorative.*
+
+---
+
+## 13. Synthesis
 
 Topology **locates** where reasoning structure lives (A), carries **genuine, non-redundant**
 information about a known circuit once confounds are controlled (D), and that non-redundancy
@@ -510,9 +562,10 @@ artifact, see D), or show a *causal* effect on behavior (F/E1 — but under a we
 inconclusive). The defensible contribution is a **diagnostic** one: H1 persistence is a real,
 non-trivial, relational-circuit-specific correlate of attention structure. The proposal's
 *prescriptive* claim (topological pruning) is unsupported; the *causal* claim is untested by a
-sufficiently strong instrument.
+sufficiently strong instrument. And as an **attributor**, topology loses to attention
+magnitude (K) — its value is descriptive/diagnostic, not as a practical circuit-finding tool.
 
-## 13. Honest caveats
+## 14. Honest caveats
 
 - All GPT-2 experiments (2-5) are small, memory-safe CPU runs (144 heads, n_seqs<=8); the
   Spike is the largest and most robust run. Directions are clear; magnitudes are not nailed.
@@ -534,8 +587,12 @@ sufficiently strong instrument.
   the "flow" framing is withdrawn. The decomposition is on the same {z_n}-item single run —
   the surviving "Fiedler beyond H1" shape result still needs length-control, classical-graph
   competitors, and replication (Phase A2-A4) before it is trusted.
+- Exp 9 (Result K) is induction-only, two small models; the attention-magnitude baseline is
+  unusually strong *for induction specifically* (induction heads place near-all weight on the
+  copy edge), so "magnitude beats topology" may be less lopsided on circuits with more diffuse
+  attention (IOI, name-mover) — untested.
 
-## 14. Follow-up research directions
+## 15. Follow-up research directions
 
 1. **Residual-information test (is topology redundant?).** ✅ DONE — Exp 3 (Result D): H1 is
    *not* redundant with first-order stats for induction (delta-R2 = {r_delta_r2}, F p = {r_fp},
@@ -557,15 +614,17 @@ sufficiently strong instrument.
    confidence ({h_verdict}). Next: a larger model with poorly-calibrated confidence on
    harder reasoning, where topology could add a *distinct* failure signal.
 
-5. **Beyond-H1 / better descriptors & sheaves.** Persistence images/landscapes, H0, honest
-   graph-statistic competitors (spectral gap, modularity); or cellular sheaves over the
-   residual stream (proposal fallback #2) to capture *what* flows along edges, not just the
-   graph shape.
+5. **Topological attribution (does topology find circuit edges?).** ✅ DONE — Exp 9
+   (Result K): no — attention magnitude localizes the induction copy edge far better than any
+   topological saliency, and dominates it causally. Topology is descriptive, not a practical
+   attributor. Open: test on circuits with diffuse attention (IOI / name-mover) where the
+   magnitude baseline is weaker; and the length-controlled "Fiedler beyond H1" shape lead
+   (proposal Phase A2-A4, `docs/proposals/2026-05-31-sheaf-flow-followup-proposal.md`).
 
-## 15. Provenance
+## 16. Provenance
 
 All experiment verdicts are machine-checked fields in their respective JSON files
-(spike, exp1-exp5, exp6 + its top_k sweep and gpt2-medium run, exp7, exp8, and exp9a).
+(spike, exp1-exp5, exp6 + its top_k sweep and gpt2-medium run, exp7, exp8, exp9a, and exp9).
 Regenerate this document with `uv run python -m src.write_writeup`.
 """
 
@@ -576,7 +635,8 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
          exp6="results/exp6_stats.json", exp6_sweep="results/exp6_sweep_stats.json",
          exp6_medium="results/exp6_medium_stats.json",
          exp7="results/exp7_stats.json", exp8="results/exp8_stats.json",
-         exp9a="results/exp9a_stats.json", out="WRITEUP.md"):
+         exp9a="results/exp9a_stats.json", exp9="results/exp9_stats.json",
+         out="WRITEUP.md"):
     s = json.load(open(spike))
     e = json.load(open(exp1))
     x = json.load(open(exp2))
@@ -589,7 +649,8 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
     h = json.load(open(exp7))
     z = json.load(open(exp8))
     za = json.load(open(exp9a))
-    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za))
+    zk = json.load(open(exp9))
+    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk))
     print(f"wrote {out}")
 
 
