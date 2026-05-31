@@ -68,3 +68,42 @@ def test_keepsets_to_bias_missing_head_keeps_all():
     # no entry for (0,0) -> that head keeps everything (all zeros)
     biases = keepsets_to_bias({}, n=3, H=1, L=1, device="cpu")
     assert torch.all(biases[0][0] == 0.0)
+
+
+# ---- GPT-2 masking (Exp 5) --------------------------------------------------
+
+@slow
+def test_gpt2_all_keep_is_lossless():
+    import torch
+    from src.attn_extract import load_named
+    from src.pruned_forward import MaskedModel
+    torch.set_num_threads(2)
+    model, tok, device = load_named("gpt2", device="cpu")
+    mm = MaskedModel(model)
+    enc = tok("The quick brown fox jumps over the lazy dog.", return_tensors="pt").to(device)
+    n = enc["input_ids"].shape[1]
+    H, L = model.config.n_head, model.config.n_layer
+    base = mm.loss(enc)
+    masked = mm.loss(enc, biases=_all_keep_biases(n, H, L, device))
+    assert abs(base - masked) < 1e-4
+
+
+@slow
+def test_gpt2_aggressive_mask_changes_loss():
+    import torch
+    from src.attn_extract import load_named
+    from src.pruned_forward import MaskedModel
+    torch.set_num_threads(2)
+    model, tok, device = load_named("gpt2", device="cpu")
+    mm = MaskedModel(model)
+    enc = tok("The quick brown fox jumps over the lazy dog.", return_tensors="pt").to(device)
+    n = enc["input_ids"].shape[1]
+    H, L = model.config.n_head, model.config.n_layer
+    eye = torch.eye(n, device=device, dtype=torch.bool)
+    biases = {li: torch.zeros(H, n, n, device=device) for li in range(L)}
+    m0 = torch.full((H, n, n), float("-inf"), device=device)
+    m0[:, eye] = 0.0
+    biases[0] = m0  # layer 0: keep only the diagonal
+    base = mm.loss(enc)
+    masked = mm.loss(enc, biases=biases)
+    assert abs(base - masked) > 1e-3
