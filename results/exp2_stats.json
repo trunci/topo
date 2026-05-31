@@ -1,0 +1,26 @@
+{
+  "n_heads": 144,
+  "top_k": 10,
+  "spearman_rho": 0.11446450172523628,
+  "spearman_p": 0.17190844502877553,
+  "mannwhitney_u": 931.0,
+  "mannwhitney_p": 0.01960128603787398,
+  "top_mean_h1": 0.31599383285374644,
+  "rest_mean_h1": 0.23235724036996822,
+  "baseline_distance_rho": 0.4462141306968893,
+  "baseline_distance_p": 2.079137113746348e-08,
+  "topology_not_dominated_by_distance": false,
+  "top_induction_heads": [
+    "L5H5 ind=0.923 h1=0.056",
+    "L6H9 ind=0.870 h1=0.153",
+    "L5H1 ind=0.856 h1=0.025",
+    "L7H10 ind=0.847 h1=0.345",
+    "L7H2 ind=0.726 h1=0.704",
+    "L5H0 ind=0.523 h1=0.552",
+    "L10H7 ind=0.498 h1=0.092",
+    "L9H6 ind=0.483 h1=0.289",
+    "L10H1 ind=0.481 h1=0.705",
+    "L9H9 ind=0.427 h1=0.238"
+  ],
+  "verdict": "RED: no significant topology-induction correspondence."
+}
