@@ -1,0 +1,101 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "alpha": 0.05,
+  "n_splits": 5,
+  "delta_r2_floor": 0.02,
+  "n_items": 180,
+  "overall_accuracy": 0.7722222222222223,
+  "frame1_discrimination": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy"
+    ],
+    "baseline_r2": 0.7576257222481646,
+    "full_r2": 0.8088224800001561,
+    "delta_r2": 0.051196757751991506,
+    "f_stat": 11.314421355729516,
+    "f_pvalue": 3.694767446021562e-08,
+    "verdict": "GREEN"
+  },
+  "frame2_failure_prediction": {
+    "base_rate_correct": 0.7722222222222223,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.8050117577895357,
+        "std_auc": 0.047972517230737886,
+        "n_folds": 5,
+        "folds": [
+          0.8169642857142858,
+          0.8303571428571429,
+          0.875,
+          0.7455357142857143,
+          0.757201646090535
+        ]
+      },
+      "confidence_plus_h1": {
+        "mean_auc": 0.7891350676072898,
+        "std_auc": 0.041787258989439406,
+        "n_folds": 5,
+        "folds": [
+          0.7321428571428571,
+          0.8392857142857143,
+          0.75,
+          0.8258928571428572,
+          0.7983539094650205
+        ]
+      },
+      "confidence_plus_sheaf": {
+        "mean_auc": 0.8141901822457378,
+        "std_auc": 0.026455013697005203,
+        "n_folds": 5,
+        "folds": [
+          0.8214285714285714,
+          0.8080357142857143,
+          0.8258928571428571,
+          0.7678571428571429,
+          0.8477366255144033
+        ]
+      },
+      "confidence_plus_h1_plus_sheaf": {
+        "mean_auc": 0.850029394473839,
+        "std_auc": 0.028222829137246903,
+        "n_folds": 5,
+        "folds": [
+          0.8169642857142858,
+          0.8705357142857143,
+          0.84375,
+          0.8258928571428572,
+          0.8930041152263374
+        ]
+      },
+      "sheaf_only": {
+        "mean_auc": 0.7648589065255733,
+        "std_auc": 0.07918901172399999,
+        "n_folds": 5,
+        "folds": [
+          0.7455357142857143,
+          0.7589285714285714,
+          0.6785714285714286,
+          0.7276785714285715,
+          0.9135802469135802
+        ]
+      }
+    },
+    "sheaf_vs_confidence": {
+      "median_delta": 0.004464285714285587,
+      "wilcoxon_p": 0.4375
+    },
+    "sheaf_vs_h1full": {
+      "median_delta": 0.08482142857142871,
+      "wilcoxon_p": 0.0625
+    },
+    "sheaf_beats_chance": true,
+    "sheaf_adds_beyond_confidence": false,
+    "verdict": "PARTIAL"
+  }
+}
