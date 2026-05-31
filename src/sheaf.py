@@ -129,6 +129,16 @@ def spectral_gap(L: np.ndarray, tol: float = 1e-7) -> float:
     return float(nz.min()) if nz.size else 0.0
 
 
+def edge_discord(O: dict, X: np.ndarray, u: int, v: int) -> float:
+    """Per-edge transport disagreement ||O_v x_v - O_u x_u||^2 for one edge {u,v}.
+
+    The unweighted per-edge sheaf inconsistency, used as a topological saliency over
+    individual edges (Exp 9). Symmetric in (u, v).
+    """
+    diff = O[v] @ X[v] - O[u] @ X[u]
+    return float(diff @ diff)
+
+
 def mean_discord(W: np.ndarray, O: dict, X: np.ndarray) -> float:
     """Mean per-edge transport disagreement ||O_v x_v - O_u x_u||^2 (weighted).
 

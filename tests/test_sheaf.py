@@ -86,3 +86,25 @@ def test_mean_discord_zero_for_consistent_orthogonal_transport():
     # transport along (u,v): O_uv = O_u O_v^T  -> O_uv x_v = O_u O_v^T O_v^T c ... check ~0
     disc = mean_discord(W, O, X)
     assert disc >= 0.0
+
+
+def test_edge_discord_zero_for_consistent_and_matches_meandiscord_terms():
+    import numpy as np
+    from src.sheaf import edge_discord, mean_discord
+    rng = np.random.default_rng(2)
+    n, d = 3, 3
+    O = {}
+    for vtx in range(n):
+        q, _ = np.linalg.qr(rng.normal(size=(d, d)))
+        O[vtx] = q
+    X = rng.normal(size=(n, d))
+    # symmetric in (u,v)
+    assert np.isclose(edge_discord(O, X, 0, 1), edge_discord(O, X, 1, 0))
+    # weighted mean of per-edge discords equals mean_discord
+    W = np.array([[0, 2.0, 1.0], [2.0, 0, 3.0], [1.0, 3.0, 0]])
+    num = den = 0.0
+    for u in range(n):
+        for v in range(u + 1, n):
+            w = W[u, v]
+            num += w * edge_discord(O, X, u, v); den += w
+    assert np.isclose(num / den, mean_discord(W, O, X))
