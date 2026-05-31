@@ -1,0 +1,58 @@
+{
+  "phase": "A1 carrier decomposition",
+  "source": "results/exp8_features.parquet",
+  "target": "hop",
+  "n_items": 180,
+  "alpha": 0.05,
+  "delta_r2_floor": 0.02,
+  "flow_beyond_shape": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy",
+      "sheaf_t1_fiedler_mean",
+      "sheaf_t1_fiedler_max"
+    ],
+    "added_cols": [
+      "sheaf_discord_mean",
+      "sheaf_discord_max",
+      "sheaf_spectral_gap_mean"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": 0.8012574582059716,
+    "full_r2": 0.8088411411661354,
+    "delta_r2": 0.007583682960163762,
+    "f_stat": 2.2216404113306885,
+    "f_pvalue": 0.08750105535420981,
+    "adds": false
+  },
+  "fiedler_beyond_h1": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy"
+    ],
+    "added_cols": [
+      "sheaf_t1_fiedler_mean",
+      "sheaf_t1_fiedler_max"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": 0.7576257222481646,
+    "full_r2": 0.8012574582059716,
+    "delta_r2": 0.043631735957807005,
+    "f_stat": 18.770583241602623,
+    "f_pvalue": 4.268434983182258e-08,
+    "adds": true
+  },
+  "discord_partial_spearman": {
+    "rho": 0.06148749446999392,
+    "p": 0.41223299406391084
+  },
+  "verdict": "SHAPE-IN-DISGUISE"
+}
