@@ -102,7 +102,8 @@ def run(out="results/exp8_features.parquet", model_name=MODEL,
         for k, it in enumerate(items):
             correct, _ = is_correct(model, tok, device, it.prompt, it.gold)
             enc = tok(format_prompt(tok, it.prompt), return_tensors="pt").to(device)
-            out_m = model(**enc, output_attentions=True, output_hidden_states=True)
+            with torch.no_grad():
+                out_m = model(**enc, output_attentions=True, output_hidden_states=True)
             conf = confidence_margin_from_logits(out_m.logits[0, -1])
 
             atts = [a[0].float().cpu().numpy() for a in out_m.attentions]  # [H,n,n] each
