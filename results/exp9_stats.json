@@ -1,0 +1,43 @@
+{
+  "alpha": 0.05,
+  "part_a_attribution": {
+    "per_saliency": {
+      "magnitude": {
+        "mean_auc": 0.9760099315068493,
+        "mean_p_at_k": 0.2876666666666666,
+        "p_vs_chance": 2.0073141390877086e-41
+      },
+      "cycle_participation": {
+        "mean_auc": 0.5007049086757991,
+        "mean_p_at_k": 0.0061666666666666675,
+        "p_vs_chance": 0.9999999999753231,
+        "p_vs_magnitude": 1.0
+      },
+      "sheaf_discord": {
+        "mean_auc": 0.5814134703196348,
+        "mean_p_at_k": 0.030500000000000003,
+        "p_vs_chance": 6.836160567783203e-38,
+        "p_vs_magnitude": 1.0
+      }
+    },
+    "n_observations": 240,
+    "verdict": "PARTIAL"
+  },
+  "part_b_causal": {
+    "median_damage": {
+      "cycle": -0.006628817543387455,
+      "sheaf": 0.0010661254980368073,
+      "magnitude": 0.02074194180473571,
+      "random": -0.0017101863363495617
+    },
+    "n": 24,
+    "cycle_vs_random_p": 0.7720628380775452,
+    "cycle_vs_magnitude_p": 0.9553133845329285,
+    "cycle_damage_positive": false,
+    "sheaf_vs_random_p": 0.00018638372421264648,
+    "sheaf_vs_magnitude_p": 0.32157111167907715,
+    "sheaf_damage_positive": true,
+    "verdict": "GREEN"
+  },
+  "headline_verdict": "PARTIAL"
+}

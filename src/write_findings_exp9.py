@@ -41,18 +41,39 @@ def generate(stats_path="results/exp9_stats.json", out_path="FINDINGS_exp9.md"):
 
 def _interpret(s, a, b):
     parts = []
+    s_alpha = s["alpha"]
+    ps = a["per_saliency"]
+    mag_auc = ps["magnitude"]["mean_auc"]
+    # which topo saliencies actually beat chance (AUC>0.5 and p<alpha)
+    beat = [s for s in ("cycle_participation", "sheaf_discord")
+            if ps[s].get("p_vs_chance") is not None and ps[s]["p_vs_chance"] < s_alpha
+            and ps[s]["mean_auc"] > 0.5]
+    chance = [s for s in ("cycle_participation", "sheaf_discord") if s not in beat]
     if a["verdict"] == "GREEN":
-        parts.append("Part A GREEN: a topological saliency localizes the induction copy edge "
-                     "beyond the attention-magnitude baseline -- topology adds attribution power.")
+        parts.append(f"Part A GREEN: a topological saliency localizes the copy edge beyond the "
+                     f"attention-magnitude baseline (magnitude AUC {mag_auc:.3f}).")
     elif a["verdict"] == "PARTIAL":
-        parts.append("Part A PARTIAL: topology localizes the copy edge above chance but not "
-                     "beyond attention magnitude -- it recovers the circuit, but the trivial "
-                     "magnitude attributor does about as well.")
+        msg = (f"Part A PARTIAL: attention magnitude is a near-perfect attributor of the copy "
+               f"edge (AUC {mag_auc:.3f}); topology does NOT beat it. ")
+        if beat:
+            msg += ("Of the topological saliencies, " + ", ".join(beat) +
+                    " beat chance but stayed well below magnitude")
+            if chance:
+                msg += "; " + ", ".join(chance) + " was at chance."
+            else:
+                msg += "."
+        else:
+            msg += "No topological saliency beat chance."
+        parts.append(msg)
     else:
-        parts.append("Part A RED: topological saliency does not localize the copy edge above chance.")
+        parts.append("Part A RED: no topological saliency localizes the copy edge above chance.")
     if b["verdict"] == "GREEN":
-        parts.append("Part B GREEN: ablating topology-flagged edges breaks induction more than "
-                     "random -- the flagged edges are causally necessary.")
+        md = b["median_damage"]
+        parts.append(f"Part B GREEN (narrow): sheaf-flagged edges damage induction above random "
+                     f"(p={b['sheaf_vs_random_p']:.4f}), but the effect (median {md['sheaf']:.3f}) "
+                     f"is ~{md['magnitude']/md['sheaf']:.0f}x weaker than magnitude "
+                     f"({md['magnitude']:.3f}) and does not beat it (p={b['sheaf_vs_magnitude_p']:.2f}); "
+                     f"cycle edges do not beat random at all.")
     elif b["verdict"] == "PARTIAL":
         parts.append("Part B PARTIAL: flagged-edge ablation hurts (damage>0) but not reliably "
                      "more than random.")
