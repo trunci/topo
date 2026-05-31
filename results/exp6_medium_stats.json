@@ -1,0 +1,32 @@
+{
+  "seq_len": 25,
+  "gap_tolerance": 2,
+  "alpha": 0.05,
+  "models": {
+    "gpt2-medium": {
+      "n_sequences": 12,
+      "k_ablated_mean": 26.666666666666668,
+      "median_damage": {
+        "cycle": 0.011274006866151431,
+        "magnitude": 0.0386999384872615,
+        "random": -3.8379631005225345e-05
+      },
+      "mean_damage": {
+        "cycle": 0.037785058295606494,
+        "magnitude": 0.03619237252336463,
+        "random": 0.005083586482699816
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.545166015625,
+        "median_diff": -0.0004931720648893023
+      },
+      "cycle_vs_random": {
+        "p_value": 0.07568359375,
+        "median_diff": 0.005096896055038047
+      },
+      "cycle_damage_positive": true,
+      "beats_random": false,
+      "verdict": "RED"
+    }
+  }
+}
