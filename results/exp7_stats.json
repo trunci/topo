@@ -1,0 +1,137 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "alpha": 0.05,
+  "n_splits": 5,
+  "overall_accuracy": 0.7722222222222223,
+  "acc_by_hop": {
+    "1": 0.7166666666666667,
+    "2": 0.85,
+    "3": 0.75
+  },
+  "all_items": {
+    "n_items": 180,
+    "base_rate_correct": 0.7722222222222223,
+    "majority_class_acc": 0.7722222222222223,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.8050117577895357,
+        "std_auc": 0.047972517230737886,
+        "n_folds": 5,
+        "folds": [
+          0.8169642857142858,
+          0.8303571428571429,
+          0.875,
+          0.7455357142857143,
+          0.757201646090535
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.7891350676072898,
+        "std_auc": 0.041787258989439406,
+        "n_folds": 5,
+        "folds": [
+          0.7321428571428571,
+          0.8392857142857143,
+          0.75,
+          0.8258928571428572,
+          0.7983539094650205
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.6904320987654321,
+        "std_auc": 0.11403657099565553,
+        "n_folds": 5,
+        "folds": [
+          0.6294642857142857,
+          0.7142857142857142,
+          0.5044642857142857,
+          0.7767857142857143,
+          0.8271604938271605
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.7869451793062905,
+        "std_auc": 0.017827478033274884,
+        "n_folds": 5,
+        "folds": [
+          0.8080357142857143,
+          0.8080357142857143,
+          0.78125,
+          0.7678571428571428,
+          0.7695473251028807
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.008928571428571397,
+      "wilcoxon_p": 0.6875
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": false,
+    "verdict": "PARTIAL"
+  },
+  "two_hop_only": {
+    "n_items": 60,
+    "base_rate_correct": 0.85,
+    "majority_class_acc": 0.85,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.7872727272727272,
+        "std_auc": 0.28141319874830334,
+        "n_folds": 5,
+        "folds": [
+          0.30000000000000004,
+          1.0,
+          1.0,
+          1.0,
+          0.6363636363636364
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.7854545454545455,
+        "std_auc": 0.21176940523063179,
+        "n_folds": 5,
+        "folds": [
+          0.4,
+          0.9,
+          0.9,
+          1.0,
+          0.7272727272727273
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.7736363636363637,
+        "std_auc": 0.06221795866279523,
+        "n_folds": 5,
+        "folds": [
+          0.7,
+          0.7,
+          0.8,
+          0.8500000000000001,
+          0.8181818181818182
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.7554545454545455,
+        "std_auc": 0.21347963303090126,
+        "n_folds": 5,
+        "folds": [
+          0.35,
+          0.9,
+          0.9,
+          0.9,
+          0.7272727272727273
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.0,
+      "wilcoxon_p": 0.6875
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": false,
+    "verdict": "PARTIAL"
+  }
+}
