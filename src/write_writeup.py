@@ -521,7 +521,7 @@ sufficiently strong instrument.
    residual stream (proposal fallback #2) to capture *what* flows along edges, not just the
    graph shape.
 
-## 13. Provenance
+## 14. Provenance
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + its top_k sweep and gpt2-medium run, and exp7). Regenerate this
