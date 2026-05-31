@@ -1,0 +1,101 @@
+{
+  "phase": "A2 length/entity de-confounding",
+  "source": "results/exp8_features.parquet",
+  "target": "hop",
+  "n_items": 180,
+  "alpha": 0.05,
+  "delta_r2_floor": 0.02,
+  "surface_cols": [
+    "seq_length",
+    "n_entities"
+  ],
+  "fiedler_beyond_h1": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy"
+    ],
+    "added_cols": [
+      "sheaf_t1_fiedler_mean",
+      "sheaf_t1_fiedler_max"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": 0.7576257222481646,
+    "full_r2": 0.8012574582059716,
+    "delta_r2": 0.043631735957807005,
+    "f_stat": 18.770583241602623,
+    "f_pvalue": 4.268434983182258e-08,
+    "adds": true
+  },
+  "fiedler_beyond_h1_len": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy",
+      "seq_length",
+      "n_entities"
+    ],
+    "added_cols": [
+      "sheaf_t1_fiedler_mean",
+      "sheaf_t1_fiedler_max"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": 0.854936500450157,
+    "full_r2": 0.8640977443681773,
+    "delta_r2": 0.009161243918020312,
+    "f_stat": 5.69619030584691,
+    "f_pvalue": 0.00403635626038743,
+    "adds": false
+  },
+  "flow_beyond_shape_len": {
+    "baseline_cols": [
+      "h1_mean_persist",
+      "h1_max_persist",
+      "h1_frac_nontrivial",
+      "ctrl_attn_distance",
+      "ctrl_offdiag_mass",
+      "ctrl_attn_entropy",
+      "sheaf_t1_fiedler_mean",
+      "sheaf_t1_fiedler_max",
+      "seq_length",
+      "n_entities"
+    ],
+    "added_cols": [
+      "sheaf_discord_mean",
+      "sheaf_discord_max",
+      "sheaf_spectral_gap_mean"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": 0.864097744368181,
+    "full_r2": 0.8688704225947369,
+    "delta_r2": 0.004772678226555915,
+    "f_stat": 2.0139483435272623,
+    "f_pvalue": 0.11395574078963853,
+    "adds": false
+  },
+  "hop_from_length_only": {
+    "baseline_cols": [],
+    "added_cols": [
+      "seq_length",
+      "n_entities"
+    ],
+    "dropped_zero_var": [],
+    "baseline_r2": -4.440892098500626e-16,
+    "full_r2": 0.7731472209241086,
+    "delta_r2": 0.773147220924109,
+    "f_stat": 301.6208544171867,
+    "f_pvalue": 9.623946566717486e-58,
+    "adds": true
+  },
+  "fiedler_partial_spearman_len": {
+    "rho": -0.2544173174069158,
+    "p": 0.0005679509550559314
+  },
+  "verdict": "LENGTH-CONFOUND"
+}
