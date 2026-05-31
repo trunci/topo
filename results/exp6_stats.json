@@ -1,0 +1,57 @@
+{
+  "seq_len": 25,
+  "gap_tolerance": 2,
+  "alpha": 0.05,
+  "models": {
+    "distilgpt2": {
+      "n_sequences": 12,
+      "k_ablated_mean": 6.083333333333333,
+      "median_damage": {
+        "cycle": 0.004348538505146271,
+        "magnitude": -0.0015864218689967124,
+        "random": 7.108349818707449e-06
+      },
+      "mean_damage": {
+        "cycle": 0.026936400869696325,
+        "magnitude": -0.003203410159148934,
+        "random": -0.0020912141490650273
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.026123046875,
+        "median_diff": 0.009689127189340063
+      },
+      "cycle_vs_random": {
+        "p_value": 0.001708984375,
+        "median_diff": 0.006939333983173146
+      },
+      "cycle_damage_positive": true,
+      "beats_random": true,
+      "verdict": "GREEN"
+    },
+    "gpt2": {
+      "n_sequences": 12,
+      "k_ablated_mean": 2.5,
+      "median_damage": {
+        "cycle": 0.0,
+        "magnitude": 0.0,
+        "random": 2.1457672083613488e-08
+      },
+      "mean_damage": {
+        "cycle": -0.0049586895905667965,
+        "magnitude": 0.0006547368261574926,
+        "random": -0.0001754883645723367
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.8203125,
+        "median_diff": 0.0
+      },
+      "cycle_vs_random": {
+        "p_value": 0.5,
+        "median_diff": 0.0
+      },
+      "cycle_damage_positive": false,
+      "beats_random": false,
+      "verdict": "INCONCLUSIVE"
+    }
+  }
+}
