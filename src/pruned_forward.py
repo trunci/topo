@@ -79,6 +79,34 @@ def keepsets_to_bias(keepsets, n, H, L, device):
     return biases
 
 
+def ablation_to_bias(ablate_sets, n, H, L, device):
+    """Convert per-(layer, head) *directed* ablate-sets into additive-bias tensors.
+
+    ablate_sets: dict (layer, head) -> set of directed (q, k) tuples to REMOVE.
+    The complement of `keepsets_to_bias`: it starts from all-zero (keep everything)
+    and sets bias[h, q, k] = -inf for each named directed edge with q != k. The
+    diagonal (q == k) is never ablated. A missing (layer, head) keeps everything.
+
+    This is the edge-exact, directional instrument for Exp 6: it removes exactly the
+    named directed edges and nothing else (no common-mode perturbation of the rest
+    of the graph), unlike the symmetric keep-set construction.
+    Returns dict layer -> tensor [H, n, n].
+    """
+    biases = {}
+    for li in range(L):
+        layer_bias = torch.zeros(H, n, n, device=device)
+        for h in range(H):
+            es = ablate_sets.get((li, h), None)
+            if not es:
+                continue  # keep all -> zeros
+            for q, k in es:
+                if q == k:
+                    continue  # never ablate the diagonal (would NaN a query row)
+                layer_bias[h, q, k] = float("-inf")
+        biases[li] = layer_bias
+    return biases
+
+
 def _attn_modules(model):
     """Yield (index, attention_submodule) for Qwen2 or GPT-2 style models."""
     inner = getattr(model, "model", None)

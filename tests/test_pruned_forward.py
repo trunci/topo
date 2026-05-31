@@ -70,6 +70,49 @@ def test_keepsets_to_bias_missing_head_keeps_all():
     assert torch.all(biases[0][0] == 0.0)
 
 
+# ---- directed ablation_to_bias (Exp 6) --------------------------------------
+
+def test_ablation_to_bias_only_named_directed_edges_ablated():
+    import torch
+    from src.pruned_forward import ablation_to_bias
+    # ablate the directed edge (2 -> 0) only, in head 0
+    abl = {(0, 0): {(2, 0)}}
+    b = ablation_to_bias(abl, n=3, H=1, L=1, device="cpu")
+    layer0 = b[0]
+    assert layer0.shape == (1, 3, 3)
+    # the named directed edge is ablated
+    assert layer0[0, 2, 0].item() == float("-inf")
+    # the reverse direction is NOT ablated (directed, not symmetric)
+    assert layer0[0, 0, 2].item() == 0.0
+    # everything else is kept (zero) -- only the named edge changes
+    assert layer0[0, 1, 0].item() == 0.0
+    assert layer0[0, 2, 1].item() == 0.0
+    # exactly one -inf entry
+    assert int(torch.isinf(layer0).sum().item()) == 1
+
+
+def test_ablation_to_bias_never_ablates_diagonal():
+    import torch
+    from src.pruned_forward import ablation_to_bias
+    # even if a self-loop is (perversely) requested, the diagonal stays kept
+    abl = {(0, 0): {(1, 1), (2, 0)}}
+    b = ablation_to_bias(abl, n=3, H=1, L=1, device="cpu")
+    layer0 = b[0]
+    assert layer0[0, 1, 1].item() == 0.0  # diagonal never ablated
+    assert layer0[0, 2, 0].item() == float("-inf")
+
+
+def test_ablation_to_bias_missing_head_keeps_all():
+    import torch
+    from src.pruned_forward import ablation_to_bias
+    abl = {(0, 0): {(2, 0)}}
+    b = ablation_to_bias(abl, n=3, H=2, L=1, device="cpu")
+    # head 1 has no ablate-set -> all zeros (keep everything)
+    assert b[0][1].sum().item() == 0.0
+    # an unmasked head/edge stays zero
+    assert b[0][0, 1, 0].item() == 0.0
+
+
 # ---- GPT-2 masking (Exp 5) --------------------------------------------------
 
 @slow
