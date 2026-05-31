@@ -77,6 +77,27 @@ def _verdict(slice_df):
     n = int(len(slice_df))
     underpowered = (base_rate > 0.85 or base_rate < 0.15)
 
+    # With (near-)zero class variance the models can't be fit; report UNDERPOWERED
+    # without attempting a fit that would raise.
+    if underpowered:
+        empty = _summary([])
+        return {
+            "n_items": n,
+            "base_rate_correct": base_rate,
+            "majority_class_acc": float(max(base_rate, 1 - base_rate)),
+            "underpowered": True,
+            "auc": {
+                "confidence_only": empty,
+                "confidence_plus_topology": empty,
+                "topology_only": empty,
+                "confidence_plus_controls": empty,
+            },
+            "delta_auc_full_minus_baseline": {"median": None, "wilcoxon_p": None},
+            "topology_beats_chance": False,
+            "topology_adds_beyond_confidence": False,
+            "verdict": "UNDERPOWERED",
+        }
+
     m0 = _fit_block(slice_df, CONF)
     m1 = _fit_block(slice_df, CONF + TOPO)
     m_topo = _fit_block(slice_df, TOPO)
@@ -99,9 +120,7 @@ def _verdict(slice_df):
     adds_beyond_conf = bool(delta_p is not None and delta_p < ALPHA
                             and delta_med is not None and delta_med > 0)
 
-    if underpowered:
-        verdict = "UNDERPOWERED"
-    elif not topo_beats_chance:
+    if not topo_beats_chance:
         verdict = "RED"
     elif adds_beyond_conf:
         verdict = "GREEN"
