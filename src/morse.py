@@ -98,6 +98,27 @@ def morse_keep(A: np.ndarray, top_k: int | None = 8, weight_floor: float = 0.0,
     return keep
 
 
+def critical_cycle_edges(A: np.ndarray, top_k: int | None = 8,
+                         weight_floor: float = 0.0,
+                         symmetrized: bool = False) -> set:
+    """Attention matrix -> set of critical 1-cells (cycle generators).
+
+    Returns only the critical edges (frozenset{i, j}) from discrete Morse
+    matching -- the topologically essential cycle generators (H1). Uses the same
+    symmetrize + sparsify + build_simplex_tree + _morse_match pipeline as
+    morse_keep, but keeps ONLY the critical 1-cells (not the spanning forest).
+    """
+    W = A.astype(float) if symmetrized else symmetrize(A)
+    W = sparsify(W, top_k=top_k, weight_floor=weight_floor)
+
+    st = build_simplex_tree(W)
+    simplices = [tuple(sorted(s)) for s, _ in st.get_simplices()]
+
+    _, critical = _morse_match(simplices)
+
+    return {frozenset(c) for c in critical if len(c) == 2}
+
+
 if __name__ == "__main__":
     # quick smoke
     W = np.zeros((4, 4))
