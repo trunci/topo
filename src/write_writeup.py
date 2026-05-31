@@ -474,7 +474,7 @@ non-trivial, relational-circuit-specific correlate of attention structure. The p
 *prescriptive* claim (topological pruning) is unsupported; the *causal* claim is untested by a
 sufficiently strong instrument.
 
-## 11. Honest caveats
+## 12. Honest caveats
 
 - All GPT-2 experiments (2-5) are small, memory-safe CPU runs (144 heads, n_seqs<=8); the
   Spike is the largest and most robust run. Directions are clear; magnitudes are not nailed.
