@@ -1,0 +1,45 @@
+{
+  "alpha": 0.05,
+  "task": "IOI",
+  "model": "gpt2",
+  "part_a_attribution": {
+    "per_saliency": {
+      "magnitude": {
+        "mean_auc": 0.962890625,
+        "mean_p_at_1": 0.609375,
+        "p_vs_chance": 1.816219544499316e-69
+      },
+      "cycle_participation": {
+        "mean_auc": 0.45833333333333326,
+        "mean_p_at_1": 0.0,
+        "p_vs_chance": 1.0,
+        "p_vs_magnitude": 1.0
+      },
+      "sheaf_discord": {
+        "mean_auc": 0.6059027777777778,
+        "mean_p_at_1": 0.0,
+        "p_vs_chance": 6.422044033260356e-16,
+        "p_vs_magnitude": 1.0
+      }
+    },
+    "n_observations": 384,
+    "verdict": "PARTIAL"
+  },
+  "part_b_causal": {
+    "median_damage": {
+      "cycle": -0.18092727661132812,
+      "sheaf": -0.3784904479980469,
+      "magnitude": -0.8523025512695312,
+      "random": 0.0190582275390625
+    },
+    "n": 48,
+    "cycle_vs_random_p": 0.9466682982373946,
+    "cycle_vs_magnitude_p": 0.001472232254826622,
+    "cycle_damage_positive": false,
+    "sheaf_vs_random_p": 0.9914471172363051,
+    "sheaf_vs_magnitude_p": 0.00396871027611212,
+    "sheaf_damage_positive": false,
+    "verdict": "RED"
+  },
+  "headline_verdict": "PARTIAL"
+}

@@ -55,6 +55,8 @@ def _interpret(s, a, b):
                         if beat else "no topological saliency beat chance."))
     else:
         parts.append(f"Part A RED: no topological saliency beats chance (magnitude AUC {mag:.3f}).")
+    md = b["median_damage"]
+    all_neg = all(md[c] <= 0 for c in ("cycle", "sheaf", "magnitude"))
     if b["verdict"] == "GREEN":
         parts.append("Part B GREEN: ablating topology-flagged edges reduces the IO-S margin more "
                      "than random -- the flagged edges are causally part of the name-mover circuit.")
@@ -62,7 +64,13 @@ def _interpret(s, a, b):
         parts.append("Part B PARTIAL: flagged-edge ablation hurts the IO behavior but not reliably "
                      "more than random.")
     else:
-        parts.append("Part B RED: ablating flagged edges does not exceed random damage.")
+        parts.append("Part B RED: ablating flagged edges does not reduce the IO margin beyond random.")
+    if all_neg:
+        parts.append("CAUTION: every condition's median damage is <=0 (ablation tends to RAISE the "
+                     "IO-S margin, magnitude most of all). The name-mover edge feeds both IO and S "
+                     "logits, so removing it within these heads can net-help the margin -- this "
+                     "readout cannot cleanly score 'necessity' here; the Part B RED reflects a "
+                     "compromised instrument, not strong evidence against topology.")
     return " ".join(parts)
 
 
