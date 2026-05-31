@@ -1,0 +1,83 @@
+{
+  "model": "gpt2",
+  "seq_len": 25,
+  "gap_tolerance": 2,
+  "alpha": 0.05,
+  "by_top_k": {
+    "8": {
+      "n_sequences": 12,
+      "k_ablated_mean": 2.5,
+      "median_damage": {
+        "cycle": 0.0,
+        "magnitude": 0.0,
+        "random": 2.1457672083613488e-08
+      },
+      "mean_damage": {
+        "cycle": -0.0049586895905667965,
+        "magnitude": 0.0006547368261574926,
+        "random": -0.0001754883645723367
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.8203125,
+        "median_diff": 0.0
+      },
+      "cycle_vs_random": {
+        "p_value": 0.5,
+        "median_diff": 0.0
+      },
+      "cycle_damage_positive": false,
+      "beats_random": false,
+      "verdict": "INCONCLUSIVE"
+    },
+    "16": {
+      "n_sequences": 12,
+      "k_ablated_mean": 7.75,
+      "median_damage": {
+        "cycle": 9.328674292197192e-05,
+        "magnitude": -0.003961633353028571,
+        "random": 9.877709671868296e-06
+      },
+      "mean_damage": {
+        "cycle": 0.0005157146426063482,
+        "magnitude": -0.005962374380348329,
+        "random": 0.0005958117300421487
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.2119140625,
+        "median_diff": 0.005615492051001758
+      },
+      "cycle_vs_random": {
+        "p_value": 0.545166015625,
+        "median_diff": 0.0002777384858927978
+      },
+      "cycle_damage_positive": true,
+      "beats_random": false,
+      "verdict": "RED"
+    },
+    "24": {
+      "n_sequences": 12,
+      "k_ablated_mean": 24.5,
+      "median_damage": {
+        "cycle": 0.06003815129966822,
+        "magnitude": 0.0014197562763001992,
+        "random": -0.00014260245021424645
+      },
+      "mean_damage": {
+        "cycle": 0.08056541796616028,
+        "magnitude": -0.008903745410910555,
+        "random": 0.0010777448159448495
+      },
+      "cycle_vs_magnitude": {
+        "p_value": 0.001220703125,
+        "median_diff": 0.06596903068479143
+      },
+      "cycle_vs_random": {
+        "p_value": 0.00244140625,
+        "median_diff": 0.06029570662110928
+      },
+      "cycle_damage_positive": true,
+      "beats_random": true,
+      "verdict": "GREEN"
+    }
+  }
+}
