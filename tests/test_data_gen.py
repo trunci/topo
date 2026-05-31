@@ -1,4 +1,30 @@
-from src.data_gen import build_pairs, Item
+from src.data_gen import build_pairs, build_items, Item
+
+
+def test_build_items_covers_three_hops():
+    items = build_items(n_per_family=4, hops=(1, 2, 3), seed=0)
+    # 2 families x 4 x 3 hops = 24
+    assert len(items) == 24
+    assert sorted({i.hop for i in items}) == [1, 2, 3]
+
+
+def test_build_items_three_hop_kinship_is_great_grandfather():
+    items = build_items(n_per_family=1, hops=(3,), seed=0)
+    kin = [i for i in items if i.family == "kinship"]
+    assert len(kin) == 1
+    it = kin[0]
+    assert it.hop == 3
+    # gold (great-grandfather = first name) must appear in the context
+    assert it.gold in it.context
+    # 3-hop chain mentions four distinct people -> three "father" links
+    assert it.context.count("father") == 3
+
+
+def test_build_items_deterministic():
+    a = build_items(n_per_family=3, hops=(1, 2, 3), seed=1)
+    b = build_items(n_per_family=3, hops=(1, 2, 3), seed=1)
+    assert [i.id for i in a] == [i.id for i in b]
+    assert [i.gold for i in a] == [i.gold for i in b]
 
 
 def test_build_pairs_returns_items():
