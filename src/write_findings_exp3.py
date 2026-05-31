@@ -52,11 +52,17 @@ statistics). Fixed before computing on real data.
   {_f(s["raw_spearman_rho"])}, p = {_f(s["raw_spearman_p"], 5)}.
 
 ## Reading
-The verdict field above is machine-checked against the pre-registered rule. If RED,
-the honest interpretation is: topological H1 persistence is redundant with simple
-first-order attention statistics for predicting the induction circuit — it carries
-no information about induction that mean distance, off-diagonal mass, and entropy do
-not already carry. This is reported as-is, whatever the outcome.
+The verdict field above is machine-checked against the pre-registered rule and is
+reported as-is, whatever the outcome.
+- **If GREEN:** H1 persistence carries information about the induction circuit that
+  the first-order scalars (mean distance, off-diagonal mass, entropy) do NOT —
+  topology is not redundant with simple statistics for this target. Note the
+  contrast with the raw Spearman: H1's marginal correlation with induction can be
+  weak while its *partial* (controls-removed) correlation is strong, which happens
+  when the first-order scalars are themselves correlated with H1 and suppress its
+  marginal signal.
+- **If RED:** H1 persistence is redundant with the first-order statistics for
+  predicting induction — it adds no residual predictive power.
 
 ## Relation to the consolidated writeup
 This sharpens Experiment 2's RED. Exp 2 showed mean attention distance predicts
