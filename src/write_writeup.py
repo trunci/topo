@@ -18,7 +18,7 @@ def _f(x, nd=2):
 
 
 def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
-          q: dict, qs: dict, qm: dict, h: dict, z: dict) -> str:
+          q: dict, qs: dict, qm: dict, h: dict, z: dict, za: dict) -> str:
     # --- spike numbers ---
     nontriv_pct = _f(s["c1_nontriv_frac"] * 100, 1)
     n_sig = s["c2_n_sig"]
@@ -168,6 +168,18 @@ def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
     z_f2_beats = z_f2["sheaf_beats_chance"]
     z_f2_adds = z_f2["sheaf_adds_beyond_confidence"]
     z_n = z["n_items"]
+
+    # --- exp9a numbers (Phase A1 carrier decomposition: flow vs shape) ---
+    za_fvs = za["flow_beyond_shape"]
+    za_fvh = za["fiedler_beyond_h1"]
+    za_dp = za["discord_partial_spearman"]
+    za_verdict = za["verdict"]
+    za_flow_dr2 = _f(za_fvs["delta_r2"], 4)
+    za_flow_fp = _f(za_fvs["f_pvalue"], 4)
+    za_fied_dr2 = _f(za_fvh["delta_r2"], 4)
+    za_fied_fp = _f(za_fvh["f_pvalue"], 7)
+    za_disc_rho = _f(za_dp["rho"], 3)
+    za_disc_p = _f(za_dp["p"], 3)
 
     return f"""# Topology of Attention — Consolidated Writeup
 
@@ -416,7 +428,7 @@ where topology might finally add a distinct failure signal — untested here.
 
 ---
 
-## 10. Result I — Sheaves: "what flows" beats "shape" at discrimination, not failure (Exp 8)
+## 10. Result I — Sheaves over the residual stream (Exp 8) [flow reading withdrawn — see Result J]
 
 Every prior result measured attention-graph **shape** (does an H1 cycle exist?) and was
 blind to **what flows** along edges. Exp 8 builds a **cellular sheaf** over the residual
@@ -453,14 +465,40 @@ sheaf vs confidence (M2 − M0): median delta {z_f2_delta}, p = {z_f2_p}; beats 
 hits the *same ceiling* H1 hit in Exp 7: predicts failure above chance but adds nothing
 beyond the model's own confidence.
 
-**Net for Exp 8:** the shape-vs-flow distinction is real — sheaf consistency beats H1 at
-*discriminating reasoning* (Frame 1 GREEN) — but neither shape nor flow beats the model's
-own confidence at *predicting failure* (Frame 2 PARTIAL). Topology's value is in
-characterizing reasoning structure, not in second-guessing the model's calibration.
+**Net for Exp 8 (as reported):** the sheaf *block* beats H1 at discriminating reasoning
+(Frame 1 GREEN) but not confidence at failure prediction (Frame 2 PARTIAL). **But the Frame 1
+"flow beats shape" reading does not survive decomposition — see Result J, which falsifies it.**
 
 ---
 
-## 11. Synthesis
+## 11. Result J — The Exp 8 "flow" signal was SHAPE in disguise (Phase A1)
+
+Result I's Frame 1 GREEN was carried by a *block* of sheaf features that mixed two very
+different things: **Fiedler value** (a scalar graph-Laplacian connectivity statistic — pure
+graph *shape*), a degenerate harmonic dimension (constant = d, contributing nothing), and
+**discord** (the only genuinely vector-valued *flow*-consistency feature). The follow-up
+study's decisive gate (`results/exp9a_stats.json`, run on the Exp 8 data) decomposes the
+block to ask: was the signal *flow* or *shape*?
+
+| nested test (predicting hop) | delta-R² | nested-F p | adds? |
+|---|---|---|---|
+| Fiedler beyond [H1 + controls] | {za_fied_dr2} | {za_fied_fp} | yes |
+| discord/flow beyond [H1 + controls + Fiedler] | {za_flow_dr2} | {za_flow_fp} | no |
+
+Partial Spearman(discord, hop given H1+controls+Fiedler) = {za_disc_rho} (p = {za_disc_p}) — about 0.
+
+**Verdict: {za_verdict}.** The added predictive power was **Fiedler — a shape statistic H1
+missed — not discord**. Once Fiedler is in the baseline, the vector-valued flow feature adds
+nothing. So Exp 8 Frame 1 is a *shape* result, not a *flow* result; the "what flows beats
+what shape" framing is **withdrawn**. Per the pre-registered kill criterion, the OV-circuit
+sheaf (Phase B) is **not** run. The honest, smaller finding stands: the attention graph's
+**algebraic connectivity (Fiedler)** predicts reasoning depth beyond H1 persistence — a
+better *shape* descriptor, not evidence that the residual stream's information flow carries
+extra signal.
+
+---
+
+## 12. Synthesis
 
 Topology **locates** where reasoning structure lives (A), carries **genuine, non-redundant**
 information about a known circuit once confounds are controlled (D), and that non-redundancy
@@ -474,7 +512,7 @@ non-trivial, relational-circuit-specific correlate of attention structure. The p
 *prescriptive* claim (topological pruning) is unsupported; the *causal* claim is untested by a
 sufficiently strong instrument.
 
-## 12. Honest caveats
+## 13. Honest caveats
 
 - All GPT-2 experiments (2-5) are small, memory-safe CPU runs (144 heads, n_seqs<=8); the
   Spike is the largest and most robust run. Directions are clear; magnitudes are not nailed.
@@ -491,10 +529,13 @@ sufficiently strong instrument.
 - Exp 7 is one small model (Qwen-0.5B, {h_n} items, single seed); "confidence" is a
   logit-margin proxy, not a calibrated probability; failure on synthetic kinship is narrow.
 - Exp 8's sheaf is non-learned (restriction maps from local PCA + Procrustes, not the
-  model's true computation); d=4, top_k=8 fixed; harmonic-dim is degenerate (always = d) so
-  the signal is carried by discord/Fiedler; the OV-circuit sheaf is a follow-up.
+  model's true computation); d=4, top_k=8 fixed; harmonic-dim is degenerate (always = d).
+- Result J (Phase A1) shows Exp 8 Frame 1 was carried by Fiedler (shape), not discord (flow);
+  the "flow" framing is withdrawn. The decomposition is on the same {z_n}-item single run —
+  the surviving "Fiedler beyond H1" shape result still needs length-control, classical-graph
+  competitors, and replication (Phase A2-A4) before it is trusted.
 
-## 13. Follow-up research directions
+## 14. Follow-up research directions
 
 1. **Residual-information test (is topology redundant?).** ✅ DONE — Exp 3 (Result D): H1 is
    *not* redundant with first-order stats for induction (delta-R2 = {r_delta_r2}, F p = {r_fp},
@@ -521,11 +562,11 @@ sufficiently strong instrument.
    residual stream (proposal fallback #2) to capture *what* flows along edges, not just the
    graph shape.
 
-## 14. Provenance
+## 15. Provenance
 
 All experiment verdicts are machine-checked fields in their respective JSON files
-(spike, exp1-exp5, exp6 + its top_k sweep and gpt2-medium run, and exp7). Regenerate this
-document with `uv run python -m src.write_writeup`.
+(spike, exp1-exp5, exp6 + its top_k sweep and gpt2-medium run, exp7, exp8, and exp9a).
+Regenerate this document with `uv run python -m src.write_writeup`.
 """
 
 
@@ -535,7 +576,7 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
          exp6="results/exp6_stats.json", exp6_sweep="results/exp6_sweep_stats.json",
          exp6_medium="results/exp6_medium_stats.json",
          exp7="results/exp7_stats.json", exp8="results/exp8_stats.json",
-         out="WRITEUP.md"):
+         exp9a="results/exp9a_stats.json", out="WRITEUP.md"):
     s = json.load(open(spike))
     e = json.load(open(exp1))
     x = json.load(open(exp2))
@@ -547,7 +588,8 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
     qm = json.load(open(exp6_medium))
     h = json.load(open(exp7))
     z = json.load(open(exp8))
-    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z))
+    za = json.load(open(exp9a))
+    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za))
     print(f"wrote {out}")
 
 
