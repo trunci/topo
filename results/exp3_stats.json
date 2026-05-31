@@ -1,0 +1,25 @@
+{
+  "n_heads": 144,
+  "controls": [
+    "attn_distance",
+    "offdiag_mass",
+    "attn_entropy"
+  ],
+  "delta_r2_floor": 0.02,
+  "alpha": 0.05,
+  "baseline_r2": 0.137059072355455,
+  "baseline_adj_r2": 0.11856748104878623,
+  "full_r2": 0.21075665389082943,
+  "full_adj_r2": 0.18804461515387483,
+  "delta_r2": 0.07369758153537442,
+  "f_stat": 12.979474434492172,
+  "f_pvalue": 0.00043756977898609374,
+  "h1_coef": 0.15433770450582282,
+  "h1_coef_p": 0.0004375697789860887,
+  "partial_spearman_rho": 0.37208021863194274,
+  "partial_spearman_p": 4.389735812848668e-06,
+  "raw_spearman_rho": 0.11446450172523628,
+  "raw_spearman_p": 0.17190844502877553,
+  "h1_adds_predictive_power": true,
+  "verdict": "GREEN: H1 persistence adds significant predictive power for induction beyond first-order attention statistics."
+}
