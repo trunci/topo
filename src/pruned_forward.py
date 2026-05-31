@@ -5,77 +5,46 @@ scores before softmax. The bias is combined with the model's own causal mask,
 so causality is preserved; softmax then renormalizes over the kept keys. The
 diagonal is always kept so no query row is fully masked (which would NaN).
 
-Two model families are supported, patched independently at import time:
-
-* Qwen2 (used by Exp 1) takes an *additive float* attention mask, so the bias is
-  simply added to the incoming mask and forwarded to the original eager kernel.
-* GPT-2 (used by Exp 5) takes a *boolean* causal mask and its installed eager
-  kernel recomputes the raw scores after applying the mask (discarding any
-  pre-softmax edits), so we cannot delegate. Instead the GPT-2 wrapper does a
-  correct eager attention itself: scaled scores -> causal mask + additive bias
-  -> softmax -> dropout -> value matmul, returning (attn_output, attn_weights)
-  in the exact layout the model expects.
+Both supported families (Qwen2, used by Exp 1; GPT-2, used by Exp 5) feed their
+eager kernel an *additive float* attention mask (0.0 keep, large-negative drop)
+and do `attn_weights = attn_weights + attention_mask` before softmax. So in both
+cases the per-head bias is simply ADDED to the incoming mask and the original
+eager kernel is called unchanged. This keeps masking lossless when the bias is
+all-zero and preserves the model's own causal mask. The diagonal is always kept
+by keepsets_to_bias so no query row is fully masked (which would NaN).
 """
 from __future__ import annotations
 
 import torch
-import torch.nn.functional as F
 import transformers.models.qwen2.modeling_qwen2 as mq
 import transformers.models.gpt2.modeling_gpt2 as mg
 
 _ORIG_EAGER = mq.eager_attention_forward
+_ORIG_GPT2_EAGER = mg.eager_attention_forward
 _STATE = {"on": False, "bias": None}
 
 
-def _wrapped_eager(module, query, key, value, attention_mask, scaling, dropout=0.0, **kw):
+def _add_bias(module, attention_mask):
+    """Return attention_mask with the per-head additive edge bias added in."""
     am = attention_mask
     if _STATE["on"] and _STATE["bias"] is not None:
         b = _STATE["bias"].get(getattr(module, "_li", None))
         if b is not None:
             add = b.unsqueeze(0)  # [1, H, q, k]
             am = add if am is None else am + add
+    return am
+
+
+def _wrapped_eager(module, query, key, value, attention_mask, scaling, dropout=0.0, **kw):
+    am = _add_bias(module, attention_mask)
     return _ORIG_EAGER(module, query, key, value, am, scaling, dropout=dropout, **kw)
 
 
-def _gpt2_wrapped_eager(module, query, key, value, attention_mask, head_mask=None,
-                        scaling=None, dropout=0.0, **kw):
-    """Correct eager attention for GPT-2 with an optional per-head additive bias.
-
-    query/key/value: [batch, n_heads, q, d]. attention_mask (when not None) is a
-    boolean causal mask [*, *, q, k] (True = attend). We build the additive
-    causal bias ourselves so the per-head -inf edge bias survives to softmax.
-    """
-    if scaling is None:
-        scaling = module.scaling
-
-    attn_weights = torch.matmul(query, key.transpose(-1, -2)) * scaling
-    q_len, k_len = query.shape[-2], key.shape[-2]
-    neg = torch.finfo(attn_weights.dtype).min
-
-    # additive causal mask (0 keep, neg drop)
-    if attention_mask is not None:
-        bool_mask = attention_mask[:, :, :, :k_len].to(torch.bool)
-        attn_weights = attn_weights.masked_fill(~bool_mask, neg)
-    elif getattr(module, "is_causal", False) and q_len > 1:
-        causal = torch.ones(q_len, k_len, dtype=torch.bool,
-                            device=query.device).tril()
-        attn_weights = attn_weights.masked_fill(~causal[None, None], neg)
-
-    # per-(layer,head) additive edge bias (0 keep, -inf drop)
-    if _STATE["on"] and _STATE["bias"] is not None:
-        b = _STATE["bias"].get(getattr(module, "_li", None))
-        if b is not None:
-            attn_weights = attn_weights + b.unsqueeze(0)  # [1, H, q, k]
-
-    attn_weights = F.softmax(attn_weights, dim=-1)
-    if head_mask is not None:
-        attn_weights = attn_weights * head_mask
-    attn_weights = attn_weights.to(value.dtype)
-    attn_weights = F.dropout(attn_weights, p=dropout, training=module.training)
-
-    attn_output = torch.matmul(attn_weights, value)
-    attn_output = attn_output.transpose(1, 2)
-    return attn_output, attn_weights
+def _gpt2_wrapped_eager(module, query, key, value, attention_mask, scaling=None,
+                        dropout=0.0, **kw):
+    am = _add_bias(module, attention_mask)
+    return _ORIG_GPT2_EAGER(module, query, key, value, am, scaling=scaling,
+                            dropout=dropout, **kw)
 
 
 # install the patches once at import time
