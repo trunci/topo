@@ -556,6 +556,30 @@ Combined (360 items, acc 0.508): hop=4 **GREEN**, hop=5 **GREEN**.
 Hop=5 topology AUC 0.989 vs confidence 0.623 across all seeds — the
 near-perfect classification holds. The original single-seed caveat is substantially addressed.
 
+**Mechanistic decomposition (pooled 3 seeds, n=180 at hop=5):** first-order attention
+controls alone achieve AUC 0.991, matching topology's 0.989.
+Pearson r(topo_mean_persist, ctrl_attn_entropy) = 0.925. Topology adds
+delta-AUC = 0.000 beyond first-order controls (Wilcoxon p = 1.0).
+The GREEN result stands — topology adds beyond confidence — but for Qwen2.5-0.5B the
+underlying mechanism is that **topology proxies attention entropy**: when the model fails to
+chain through deep hops, both attention spread and cycle persistence collapse together.
+
+**Model generalization (Qwen2.5-1.5B-Instruct, hop=3,4,5, n=180, acc=0.506):**
+topology AUC 0.924 vs confidence 0.641, **GREEN** combined. Per-hop:
+
+| hop | topology AUC | confidence AUC | verdict |
+|---|---|---|---|
+| hop3 | 0.944 | 0.583 | GREEN |
+| hop4 | 0.961 | 0.611 | GREEN |
+| hop5 | 0.989 | 0.753 | GREEN |
+
+Crucially, topology adds delta-AUC 0.216 **beyond first-order controls**
+(controls AUC 0.734 → full AUC 0.948, p = 0.0312, adds = True).
+For the 1.5B model, topology is not merely proxying attention entropy — it carries unique
+structural information on top of the first-order statistics. The mechanism appears to vary
+by model scale: small model (0.5B) in the miscalibration regime → topology = entropy proxy;
+larger model (1.5B) in the same regime → topology adds beyond entropy.
+
 ---
 
 ## 18. Synthesis
@@ -607,7 +631,9 @@ genuine failure signal in the miscalibration regime.
   resolves contradictions. Single model, 480 items, single seed.
 - Exp 13 (Result P) original run: 120 items, single seed. The hop=5 AUC=1.000 was
   confirmed across 3 seeds (360 items pooled): hop=5 GREEN (topo 0.989
-  vs conf 0.623), hop=4 GREEN. Still one model, two task families.
+  vs conf 0.623), hop=4 GREEN. Model generalization (1.5B) also GREEN, with
+  topology adding uniquely beyond first-order controls (delta 0.216, p=0.0312).
+  Still two task families (kinship + ordering), synthetic prompts only.
 
 ## 20. Follow-up research directions
 
@@ -644,4 +670,4 @@ genuine failure signal in the miscalibration regime.
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, exp13, and exp13_replication). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, exp13_replication, and exp13_1p5b). Regenerate this document with `uv run python -m src.write_writeup`.

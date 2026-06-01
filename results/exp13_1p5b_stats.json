@@ -1,0 +1,273 @@
+{
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "hops_tested": [
+    3,
+    4,
+    5
+  ],
+  "overall_accuracy": 0.5055555555555555,
+  "acc_by_hop": {
+    "3": 0.5,
+    "4": 0.5,
+    "5": 0.5166666666666667
+  },
+  "all_items": {
+    "n_items": 180,
+    "base_rate_correct": 0.5055555555555555,
+    "majority_class_acc": 0.5055555555555555,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.6412338034629056,
+        "std_auc": 0.1252814662678063,
+        "n_folds": 5,
+        "folds": [
+          0.6574074074074074,
+          0.6759259259259259,
+          0.6604938271604939,
+          0.41358024691358025,
+          0.7987616099071208
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.9197148645033062,
+        "std_auc": 0.03897355161037216,
+        "n_folds": 5,
+        "folds": [
+          0.9074074074074074,
+          0.8703703703703705,
+          0.9845679012345678,
+          0.8981481481481481,
+          0.9380804953560371
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.9240377632534497,
+        "std_auc": 0.040207507990673415,
+        "n_folds": 5,
+        "folds": [
+          0.9074074074074074,
+          0.8703703703703705,
+          0.9907407407407407,
+          0.9104938271604939,
+          0.9411764705882353
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.7338149294805641,
+        "std_auc": 0.027472821978340226,
+        "n_folds": 5,
+        "folds": [
+          0.7253086419753086,
+          0.6975308641975309,
+          0.7438271604938271,
+          0.7222222222222222,
+          0.7801857585139319
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.25,
+      "wilcoxon_p": 0.03125
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": true,
+    "verdict": "GREEN"
+  },
+  "hop3_only": {
+    "n_items": 60,
+    "base_rate_correct": 0.5,
+    "majority_class_acc": 0.5,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.5833333333333333,
+        "std_auc": 0.13608276348795437,
+        "n_folds": 5,
+        "folds": [
+          0.3333333333333333,
+          0.7222222222222223,
+          0.5555555555555556,
+          0.6666666666666667,
+          0.638888888888889
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.9388888888888889,
+        "std_auc": 0.08314794192830977,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          0.9444444444444444,
+          0.9722222222222223,
+          0.7777777777777779,
+          1.0
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.9444444444444444,
+        "std_auc": 0.08606629658238699,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          0.9444444444444444,
+          1.0,
+          0.7777777777777779,
+          1.0
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 1.0,
+        "std_auc": 0.0,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.36111111111111105,
+      "wilcoxon_p": 0.03125
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": true,
+    "verdict": "GREEN"
+  },
+  "hop4_only": {
+    "n_items": 60,
+    "base_rate_correct": 0.5,
+    "majority_class_acc": 0.5,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.6111111111111112,
+        "std_auc": 0.08425417160057283,
+        "n_folds": 5,
+        "folds": [
+          0.5555555555555556,
+          0.6666666666666667,
+          0.4722222222222222,
+          0.6666666666666666,
+          0.6944444444444446
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.961111111111111,
+        "std_auc": 0.048432210483785224,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          0.888888888888889,
+          1.0,
+          0.9166666666666667,
+          1.0
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.961111111111111,
+        "std_auc": 0.048432210483785224,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          0.888888888888889,
+          1.0,
+          0.9166666666666667,
+          1.0
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 1.0,
+        "std_auc": 0.0,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.30555555555555536,
+      "wilcoxon_p": 0.03125
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": true,
+    "verdict": "GREEN"
+  },
+  "hop5_only": {
+    "n_items": 60,
+    "base_rate_correct": 0.5166666666666667,
+    "majority_class_acc": 0.5166666666666667,
+    "underpowered": false,
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.7531746031746032,
+        "std_auc": 0.10705169549187235,
+        "n_folds": 5,
+        "folds": [
+          0.8611111111111112,
+          0.6944444444444444,
+          0.8333333333333334,
+          0.8055555555555556,
+          0.5714285714285714
+        ]
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.9830158730158731,
+        "std_auc": 0.022779851683695538,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          0.9722222222222223,
+          1.0,
+          1.0,
+          0.9428571428571428
+        ]
+      },
+      "topology_only": {
+        "mean_auc": 0.9885714285714287,
+        "std_auc": 0.022857142857142864,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.9428571428571428
+        ]
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.9942857142857143,
+        "std_auc": 0.011428571428571389,
+        "n_folds": 5,
+        "folds": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.9714285714285715
+        ]
+      }
+    },
+    "delta_auc_full_minus_baseline": {
+      "median": 0.19444444444444442,
+      "wilcoxon_p": 0.03125
+    },
+    "topology_beats_chance": true,
+    "topology_adds_beyond_confidence": true,
+    "verdict": "GREEN"
+  },
+  "topo_beyond_controls_all": {
+    "ctrl_auc": 0.7338149294805641,
+    "full_auc": 0.9481328593815693,
+    "delta_median": 0.21604938271604934,
+    "wilcoxon_p": 0.03125,
+    "adds": true
+  }
+}
