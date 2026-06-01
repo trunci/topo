@@ -19,7 +19,7 @@ def _f(x, nd=2):
 
 def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
           q: dict, qs: dict, qm: dict, h: dict, z: dict, za: dict, zk: dict,
-          zl: dict, zm: dict, zn: dict, zo: dict, zp: dict) -> str:
+          zl: dict, zm: dict, zn: dict, zo: dict, zp: dict, zpr: dict) -> str:
     # --- spike numbers ---
     nontriv_pct = _f(s["c1_nontriv_frac"] * 100, 1)
     n_sig = s["c2_n_sig"]
@@ -262,6 +262,22 @@ def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
     zp_delta_all = _f(zp["all_items"]["delta_auc_full_minus_baseline"]["median"], 3)
     zp_p_all = _f(zp["all_items"]["delta_auc_full_minus_baseline"]["wilcoxon_p"], 4)
     zp_adds_all = zp["all_items"]["topology_adds_beyond_confidence"]
+
+    # --- exp13 replication numbers (seeds 0+1+2 pooled) ---
+    zpr_n = zpr["combined"]["n_items"]
+    zpr_acc = _f(zpr["combined"]["overall_accuracy"], 3)
+    zpr_h4_v = zpr["combined"]["hop4_only"]["verdict"]
+    zpr_h5_v = zpr["combined"]["hop5_only"]["verdict"]
+    zpr_h5_topo = _f(zpr["combined"]["hop5_only"]["auc"]["topology_only"]["mean_auc"], 3)
+    zpr_h5_conf = _f(zpr["combined"]["hop5_only"]["auc"]["confidence_only"]["mean_auc"], 3)
+    zpr_per_seed_rows = "\n".join(
+        f"| {label} | "
+        f"{_f(info['hop4_topo_auc'], 3)} / {_f(info['hop4_conf_auc'], 3)} | "
+        f"{info['hop4_verdict']} | "
+        f"{_f(info['hop5_topo_auc'], 3)} / {_f(info['hop5_conf_auc'], 3)} | "
+        f"{info['hop5_verdict']} |"
+        for label, info in zpr["per_seed"].items()
+    )
 
     # --- exp11 numbers (clean IOI causal readout, IO log-prob instrument) ---
     zn_pb = zn["part_b_causal_clean"]
@@ -812,9 +828,15 @@ chance ({zp_conf_h5}). The miscalibration hypothesis is confirmed: in the regime
 the model is genuinely at the edge of its reasoning ability, attention topology carries
 failure-relevant information that output confidence does not encode.
 
-**Important caveat:** n=60 per hop stratum, single seed. The hop=5 AUC=1.000 is consistent
-across all 5 CV folds but is a strong claim from 60 items; replication with more seeds
-and items is the natural next step.
+**Replication (seeds 0–2 pooled, n={zpr_n}):**
+
+| seed | hop=4 topo/conf AUC | hop=4 verdict | hop=5 topo/conf AUC | hop=5 verdict |
+|---|---|---|---|---|
+{zpr_per_seed_rows}
+
+Combined ({zpr_n} items, acc {zpr_acc}): hop=4 **{zpr_h4_v}**, hop=5 **{zpr_h5_v}**.
+Hop=5 topology AUC {zpr_h5_topo} vs confidence {zpr_h5_conf} across all seeds — the
+near-perfect classification holds. The original single-seed caveat is substantially addressed.
 
 ---
 
@@ -865,9 +887,9 @@ genuine failure signal in the miscalibration regime.
 - Exp 12 (Result O) used direct-competitor distractors to try to create poorly-calibrated
   confidence. The distractor instead improved accuracy, indicating the model robustly
   resolves contradictions. Single model, 480 items, single seed.
-- Exp 13 (Result P) is {zp_n} items, single seed, one model (Qwen2.5-0.5B). The hop=5
-  AUC=1.000 across all 5 CV folds is a strong result from n=60; replication with more
-  items and seeds is the natural next step.
+- Exp 13 (Result P) original run: {zp_n} items, single seed. The hop=5 AUC=1.000 was
+  confirmed across 3 seeds ({zpr_n} items pooled): hop=5 {zpr_h5_v} (topo {zpr_h5_topo}
+  vs conf {zpr_h5_conf}), hop=4 {zpr_h4_v}. Still one model, two task families.
 
 ## 20. Follow-up research directions
 
@@ -904,7 +926,7 @@ genuine failure signal in the miscalibration regime.
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, and exp13). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, and exp13_replication). Regenerate this document with `uv run python -m src.write_writeup`.
 """
 
 
@@ -920,6 +942,7 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
          exp11="results/exp11_stats.json",
          exp12="results/exp12_stats.json",
          exp13="results/exp13_stats.json",
+         exp13_replication="results/exp13_replication_stats.json",
          out="WRITEUP.md"):
     s = json.load(open(spike))
     e = json.load(open(exp1))
@@ -939,7 +962,8 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
     zn = json.load(open(exp11))
     zo = json.load(open(exp12))
     zp = json.load(open(exp13))
-    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo, zp))
+    zpr = json.load(open(exp13_replication))
+    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo, zp, zpr))
     print(f"wrote {out}")
 
 

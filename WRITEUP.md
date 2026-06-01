@@ -544,9 +544,17 @@ chance (0.617). The miscalibration hypothesis is confirmed: in the regime where
 the model is genuinely at the edge of its reasoning ability, attention topology carries
 failure-relevant information that output confidence does not encode.
 
-**Important caveat:** n=60 per hop stratum, single seed. The hop=5 AUC=1.000 is consistent
-across all 5 CV folds but is a strong claim from 60 items; replication with more seeds
-and items is the natural next step.
+**Replication (seeds 0–2 pooled, n=360):**
+
+| seed | hop=4 topo/conf AUC | hop=4 verdict | hop=5 topo/conf AUC | hop=5 verdict |
+|---|---|---|---|---|
+| seed0 | 0.977 / 0.780 | GREEN | 1.000 / 0.617 | GREEN |
+| seed1 | 1.000 / 0.922 | GREEN | 0.994 / 0.683 | GREEN |
+| seed2 | 0.977 / 0.860 | PARTIAL | 0.972 / 0.541 | GREEN |
+
+Combined (360 items, acc 0.508): hop=4 **GREEN**, hop=5 **GREEN**.
+Hop=5 topology AUC 0.989 vs confidence 0.623 across all seeds — the
+near-perfect classification holds. The original single-seed caveat is substantially addressed.
 
 ---
 
@@ -597,9 +605,9 @@ genuine failure signal in the miscalibration regime.
 - Exp 12 (Result O) used direct-competitor distractors to try to create poorly-calibrated
   confidence. The distractor instead improved accuracy, indicating the model robustly
   resolves contradictions. Single model, 480 items, single seed.
-- Exp 13 (Result P) is 120 items, single seed, one model (Qwen2.5-0.5B). The hop=5
-  AUC=1.000 across all 5 CV folds is a strong result from n=60; replication with more
-  items and seeds is the natural next step.
+- Exp 13 (Result P) original run: 120 items, single seed. The hop=5 AUC=1.000 was
+  confirmed across 3 seeds (360 items pooled): hop=5 GREEN (topo 0.989
+  vs conf 0.623), hop=4 GREEN. Still one model, two task families.
 
 ## 20. Follow-up research directions
 
@@ -636,4 +644,4 @@ genuine failure signal in the miscalibration regime.
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, and exp13). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, and exp13_replication). Regenerate this document with `uv run python -m src.write_writeup`.
