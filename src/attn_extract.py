@@ -12,14 +12,26 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 
 
-def load_named(model_name: str, device: str | None = None):
-    """Load any causal-LM by name with float32 + eager attention (so attentions work)."""
+def load_named(model_name: str, device: str | None = None,
+               dtype=None):
+    """Load any causal-LM by name with eager attention (so attentions work).
+
+    dtype defaults to float32 on CPU/MPS and bfloat16 on CUDA.
+    Attention matrices are always cast to float32 before topology computation.
+    """
     if device is None:
-        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
+    if dtype is None:
+        dtype = torch.bfloat16 if device == "cuda" else torch.float32
     tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,          # float32 for stable eager attention on MPS
+        torch_dtype=dtype,
         attn_implementation="eager",
     )
     model.to(device).eval()

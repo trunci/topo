@@ -24,9 +24,11 @@ N_SPLITS = 5
 SEED = 0
 
 TOPO = ["topo_mean_persist", "topo_max_persist", "topo_frac_nontrivial"]
-CTRL = ["ctrl_attn_distance", "ctrl_offdiag_mass", "ctrl_attn_entropy"]
+CTRL = ["ctrl_attn_distance", "ctrl_offdiag_mass", "ctrl_attn_entropy",
+        "ctrl_kl_from_uniform"]
 CONF = ["confidence_margin"]
-TOHA_AUROC = 0.71   # TOHA on HotpotQA/Mistral-7B (Bazarova et al., ACL 2026)
+TOHA_AUROC = 0.71    # TOHA on HotpotQA/Mistral-7B (Bazarova et al., ACL 2026)
+KL_PROBE_AUROC = 0.79  # KL-divergence probe (arXiv 2605.05025), avg over models
 
 
 def _cv_auc(X, y, seed=SEED):
@@ -133,21 +135,44 @@ def compute_stats(features_path="results/exp14_features.parquet",
         json.dump(stats, f, indent=2)
 
     v = stats["all_items"]
-    print(f"[exp14] n={stats['n_items']} acc={stats['overall_accuracy']:.3f} "
-          f"seq_len={stats['mean_seq_len']:.0f}")
+    print(f"\n[exp14] ── RESULTS ─────────────────────────────────────────")
+    print(f"  n={stats['n_items']}  acc={stats['overall_accuracy']:.3f}  "
+          f"mean_seq_len={stats['mean_seq_len']:.0f}")
+    print(f"  acc by level: {stats['acc_by_level']}")
     if v["verdict"] != "UNDERPOWERED":
         topo_auc = v["auc"]["topology_only"]["mean_auc"]
         conf_auc = v["auc"]["confidence_only"]["mean_auc"]
         ctrl_auc = v["auc"]["confidence_plus_controls"]["mean_auc"]
-        print(f"[exp14] topo={topo_auc:.3f} conf={conf_auc:.3f} "
-              f"ctrl={ctrl_auc:.3f} | verdict={v['verdict']}")
-        print(f"[exp14] topo vs TOHA reference: {topo_auc:.3f} vs {TOHA_AUROC:.2f}")
-        print(f"[exp14] topo adds beyond conf: {v['delta_topo_vs_conf']['adds']} "
-              f"(p={v['delta_topo_vs_conf']['wilcoxon_p']})")
-        print(f"[exp14] topo adds beyond ctrl: {v['delta_topo_vs_ctrl']['adds']} "
-              f"(p={v['delta_topo_vs_ctrl']['wilcoxon_p']})")
+        print(f"\n  ── Overall AUCs ──")
+        print(f"  confidence only:   {conf_auc:.3f}")
+        print(f"  topology only:     {topo_auc:.3f}")
+        print(f"  controls only:     {ctrl_auc:.3f}")
+        print(f"  TOHA reference:    {TOHA_AUROC:.3f}  (same model, paper-reported)")
+        print(f"  KL-probe ref:      {KL_PROBE_AUROC:.3f}  (arXiv 2605.05025)")
+        print(f"\n  topology vs TOHA:  {'BEATS' if topo_auc > TOHA_AUROC else 'BELOW'} "
+              f"({topo_auc:.3f} vs {TOHA_AUROC:.3f})")
+        print(f"  topology vs KL:    {'BEATS' if topo_auc > KL_PROBE_AUROC else 'BELOW'} "
+              f"({topo_auc:.3f} vs {KL_PROBE_AUROC:.3f})")
+        print(f"\n  topo adds beyond conf: {v['delta_topo_vs_conf']['adds']} "
+              f"(Δ={v['delta_topo_vs_conf']['median']:.3f}, "
+              f"p={v['delta_topo_vs_conf']['wilcoxon_p']:.4f})")
+        print(f"  topo adds beyond ctrl: {v['delta_topo_vs_ctrl']['adds']} "
+              f"(Δ={v['delta_topo_vs_ctrl']['median']:.3f}, "
+              f"p={v['delta_topo_vs_ctrl']['wilcoxon_p']:.4f})")
+        print(f"\n  ── Regime-conditional (by level) ──")
+        for lv in ["easy", "medium", "hard"]:
+            if f"{lv}_items" in stats:
+                lv_v = stats[f"{lv}_items"]
+                if lv_v["verdict"] != "UNDERPOWERED":
+                    ta = lv_v["auc"]["topology_only"]["mean_auc"]
+                    ca = lv_v["auc"]["confidence_only"]["mean_auc"]
+                    print(f"  {lv:8s}: acc={lv_v['acc']:.3f}  topo={ta:.3f}  "
+                          f"conf={ca:.3f}  verdict={lv_v['verdict']}")
+                else:
+                    print(f"  {lv:8s}: UNDERPOWERED (acc={lv_v['acc']:.3f})")
+        print(f"  verdict: {v['verdict']}")
     else:
-        print(f"[exp14] UNDERPOWERED (acc={v['acc']:.3f})")
+        print(f"  UNDERPOWERED (acc={v['acc']:.3f})")
     return stats
 
 
