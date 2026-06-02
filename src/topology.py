@@ -38,23 +38,45 @@ def sparsify(W: np.ndarray, top_k: int | None = None, weight_floor: float = 0.0)
     return W
 
 
+def edges_from_weights(W: np.ndarray) -> tuple[int, np.ndarray]:
+    """Extract the upper-triangular nonzero edges of a (sparsified) weight matrix.
+
+    Returns (n_nodes, edges) where edges is an (m, 3) array of [i, j, weight].
+    This is the compact representation passed to workers instead of the dense
+    matrix — after top-k sparsification it is ~170x smaller than W.
+    """
+    n = W.shape[0]
+    iu = np.triu_indices(n, k=1)
+    w = W[iu]
+    nz = w > 0.0
+    edges = np.column_stack([iu[0][nz], iu[1][nz], w[nz]]).astype(float)
+    return n, edges
+
+
+def build_simplex_tree_from_edges(n: int, edges: np.ndarray) -> gudhi.SimplexTree:
+    """Build the flag complex from a precomputed (n_nodes, edge-list).
+
+    Same filtration f(edge) = 1 - weight as build_simplex_tree, expanded to
+    dimension 2. Splitting prep (sparsify -> edges, in the main process) from
+    this step lets workers receive a tiny edge list instead of a dense matrix.
+    """
+    st = gudhi.SimplexTree()
+    for i in range(n):
+        st.insert([i], filtration=0.0)
+    for i, j, w in edges:
+        st.insert([int(i), int(j)], filtration=float(1.0 - w))
+    st.expansion(2)
+    return st
+
+
 def build_simplex_tree(W: np.ndarray) -> gudhi.SimplexTree:
     """Build the flag (clique) complex with filtration f(edge) = 1 - weight.
 
     Vertices enter at 0; strong edges (weight near 1) enter early (near 0).
     Expanded to dimension 2 so triangles can fill in and kill 1-cycles.
     """
-    n = W.shape[0]
-    st = gudhi.SimplexTree()
-    for i in range(n):
-        st.insert([i], filtration=0.0)
-    iu = np.triu_indices(n, k=1)
-    for i, j in zip(*iu):
-        w = W[i, j]
-        if w > 0.0:
-            st.insert([int(i), int(j)], filtration=float(1.0 - w))
-    st.expansion(2)
-    return st
+    n, edges = edges_from_weights(W)
+    return build_simplex_tree_from_edges(n, edges)
 
 
 def h1_intervals(st: gudhi.SimplexTree) -> np.ndarray:
@@ -76,6 +98,33 @@ def betti1_at(intervals: np.ndarray, t: float) -> int:
     return int(np.sum((births <= t) & (t < deaths)))
 
 
+def _features_from_intervals(intervals: np.ndarray,
+                             thresholds: tuple[float, ...]) -> dict:
+    finite = intervals[np.isfinite(intervals[:, 1])] if intervals.size else intervals
+    persist = (finite[:, 1] - finite[:, 0]) if finite.size else np.array([])
+    feats = {
+        "n_cycles": int(intervals.shape[0]),
+        "total_persistence": float(persist.sum()) if persist.size else 0.0,
+        "max_persistence": float(persist.max()) if persist.size else 0.0,
+    }
+    for t in thresholds:
+        feats[f"betti1_t{t}"] = betti1_at(intervals, t)
+    return feats
+
+
+def h1_features_from_edges(
+    n: int, edges: np.ndarray,
+    thresholds: tuple[float, ...] = (0.3, 0.5, 0.7),
+) -> dict:
+    """H1 feature dict from a precomputed (n_nodes, edge-list).
+
+    Identical output to h1_features, but takes the compact edge representation
+    so the dense weight matrix never has to be passed across a process boundary.
+    """
+    intervals = h1_intervals(build_simplex_tree_from_edges(n, edges))
+    return _features_from_intervals(intervals, thresholds)
+
+
 def h1_features(
     A: np.ndarray,
     thresholds: tuple[float, ...] = (0.3, 0.5, 0.7),
@@ -90,13 +139,4 @@ def h1_features(
     W = A.astype(float) if symmetrized else symmetrize(A)
     W = sparsify(W, top_k=top_k, weight_floor=weight_floor)
     intervals = h1_intervals(build_simplex_tree(W))
-    finite = intervals[np.isfinite(intervals[:, 1])] if intervals.size else intervals
-    persist = (finite[:, 1] - finite[:, 0]) if finite.size else np.array([])
-    feats = {
-        "n_cycles": int(intervals.shape[0]),
-        "total_persistence": float(persist.sum()) if persist.size else 0.0,
-        "max_persistence": float(persist.max()) if persist.size else 0.0,
-    }
-    for t in thresholds:
-        feats[f"betti1_t{t}"] = betti1_at(intervals, t)
-    return feats
+    return _features_from_intervals(intervals, thresholds)

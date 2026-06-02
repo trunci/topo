@@ -57,6 +57,55 @@ def get_attentions(model, tok, device, text: str) -> np.ndarray:
     return np.stack(atts)
 
 
+def _attn_layers(model):
+    """Return the list of self-attention submodules (Mistral/Qwen/GPT-NeoX layout)."""
+    base = getattr(model, "model", model)
+    return [layer.self_attn for layer in base.layers]
+
+
+@torch.no_grad()
+def get_attentions_lowmem(model, tok, device, text: str) -> list[np.ndarray]:
+    """Capture per-head attentions one layer at a time, offloading to CPU.
+
+    output_attentions=True makes HF materialise ALL layers' attention tensors on
+    the GPU simultaneously (~3-8 GB for long contexts), which OOMs a 22 GB card
+    that already holds a 7B model. Here a forward hook on each self_attn grabs
+    that layer's weights, moves them to CPU immediately, and returns the layer's
+    output with the GPU attention tensor replaced by None — so HF accumulates
+    Nones, never holding more than one layer's attention on the GPU at once.
+
+    Returns a list of [heads, n, n] float32 arrays (identical values to
+    get_attentions, just never co-resident on the GPU).
+    """
+    captured: dict[int, np.ndarray] = {}
+    handles = []
+
+    def _make_hook(idx):
+        def hook(module, inp, out):
+            # out is (attn_output, attn_weights, ...) when output_attentions=True
+            if isinstance(out, tuple) and len(out) >= 2 and out[1] is not None:
+                captured[idx] = out[1][0].float().cpu().numpy()  # [heads, n, n]
+                return (out[0], None) + tuple(out[2:])
+            return out
+        return hook
+
+    layers = _attn_layers(model)
+    for i, attn in enumerate(layers):
+        handles.append(attn.register_forward_hook(_make_hook(i)))
+    try:
+        enc = tok(format_prompt(tok, text), return_tensors="pt").to(device)
+        model(**enc, output_attentions=True)
+        n_seq = int(enc["input_ids"].shape[1])
+        del enc
+        if device == "cuda":
+            torch.cuda.empty_cache()
+    finally:
+        for h in handles:
+            h.remove()
+    atts = [captured[i] for i in range(len(layers))]
+    return atts, n_seq
+
+
 @torch.no_grad()
 def is_correct(model, tok, device, text: str, gold: str, max_new_tokens: int = 12):
     enc = tok(format_prompt(tok, text), return_tensors="pt").to(device)

@@ -23,14 +23,16 @@ from __future__ import annotations
 
 import gc
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
 import torch
 
-from src.attn_extract import load_named, format_prompt, is_correct
+from src.attn_extract import (load_named, format_prompt, is_correct,
+                              get_attentions_lowmem)
 from src.data_hotpotqa import build_hotpot_items
-from src.topology import h1_features
+from src.topology import symmetrize, sparsify, edges_from_weights, h1_features_from_edges
 from src.induction import attention_distance, offdiag_mass
 from src.residual import attention_entropy
 
@@ -38,6 +40,19 @@ MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 N_ITEMS = 200
 SEED = 0
 TOP_K = 8
+N_JOBS = int(os.environ.get("EXP14_N_JOBS", "0")) or (os.cpu_count() or 1)
+
+
+def _h1_persist_from_edges(args):
+    """Worker: H1 scalars from a compact (n_nodes, edge-list).
+
+    The main process does symmetrize+sparsify and ships only the edge list
+    (~10k floats) rather than the dense 1319x1319 matrix (~7MB), so the
+    process-boundary pickling cost drops ~170x. Identical math.
+    """
+    n, edges = args
+    f = h1_features_from_edges(n, edges)
+    return f["total_persistence"], f["max_persistence"]
 
 
 @torch.no_grad()
@@ -60,24 +75,38 @@ def _kl_from_uniform(A: np.ndarray) -> float:
 
 
 @torch.no_grad()
-def topo_features(model, tok, device, text: str, top_k: int) -> dict:
-    enc = tok(format_prompt(tok, text), return_tensors="pt").to(device)
-    out = model(**enc, output_attentions=True)
-    atts = [a[0].float().cpu().numpy() for a in out.attentions]
-    tot, mx, nontriv, dist, off, ent, kl = [], [], 0, [], [], [], []
-    n_heads = 0
-    for layer in atts:
-        for h in range(layer.shape[0]):
-            A = layer[h]
-            f = h1_features(A, top_k=top_k)
-            tot.append(f["total_persistence"])
-            mx.append(f["max_persistence"])
-            nontriv += 1 if f["total_persistence"] > 0 else 0
-            dist.append(attention_distance(A))
-            off.append(offdiag_mass(A))
-            ent.append(attention_entropy(A))
-            kl.append(_kl_from_uniform(A))
-            n_heads += 1
+def topo_features(model, tok, device, text: str, top_k: int,
+                  pool: ProcessPoolExecutor | None = None) -> dict:
+    # Low-memory per-layer capture: never holds more than one layer's attention
+    # on the GPU, so long contexts don't OOM a 22 GB card holding a 7B model.
+    atts, n_seq = get_attentions_lowmem(model, tok, device, text)
+
+    # Flatten to a list of per-head matrices.
+    mats = [layer[h] for layer in atts for h in range(layer.shape[0])]
+    n_heads = len(mats)
+
+    # First-order controls are cheap — compute serially in the main process.
+    dist = [attention_distance(A) for A in mats]
+    off  = [offdiag_mass(A) for A in mats]
+    ent  = [attention_entropy(A) for A in mats]
+    kl   = [_kl_from_uniform(A) for A in mats]
+
+    # Sparsify in the main process (cheap, vectorized) and extract compact edge
+    # lists. Only the edge lists cross the process boundary — not dense matrices.
+    args = []
+    for A in mats:
+        W = sparsify(symmetrize(A), top_k=top_k)
+        args.append(edges_from_weights(W))
+
+    # H1 persistent homology is the bottleneck — fan it across worker processes.
+    if pool is not None:
+        results = list(pool.map(_h1_persist_from_edges, args, chunksize=8))
+    else:
+        results = [_h1_persist_from_edges(a) for a in args]
+    tot = [r[0] for r in results]
+    mx  = [r[1] for r in results]
+    nontriv = sum(1 for t in tot if t > 0)
+
     return {
         "topo_mean_persist":    float(np.mean(tot)),
         "topo_max_persist":     float(np.max(mx)),
@@ -86,7 +115,7 @@ def topo_features(model, tok, device, text: str, top_k: int) -> dict:
         "ctrl_offdiag_mass":    float(np.mean(off)),
         "ctrl_attn_entropy":    float(np.mean(ent)),
         "ctrl_kl_from_uniform": float(np.mean(kl)),   # KL-probe baseline feature
-        "seq_len":              int(enc["input_ids"].shape[1]),
+        "seq_len":              n_seq,
     }
 
 
@@ -102,15 +131,27 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
     device_str = "cuda" if has_gpu else "cpu"
     print(f"[exp14] {len(items)} HotpotQA bridge items (seed={seed})", flush=True)
     print(f"[exp14] loading {model_name} ({device_str})...", flush=True)
+    print(f"[exp14] topology parallelism: {N_JOBS} workers", flush=True)
     model, tok, device = load_named(model_name, device=device_str)
 
     rows = []
+    skipped = 0
+    pool = ProcessPoolExecutor(max_workers=N_JOBS) if N_JOBS > 1 else None
     try:
         for k, it in enumerate(items):
-            correct, ans = is_correct(model, tok, device, it.prompt, it.answer,
-                                      max_new_tokens=20)
-            conf = confidence_margin(model, tok, device, it.prompt)
-            feats = topo_features(model, tok, device, it.prompt, top_k)
+            try:
+                correct, ans = is_correct(model, tok, device, it.prompt, it.answer,
+                                          max_new_tokens=20)
+                conf = confidence_margin(model, tok, device, it.prompt)
+                feats = topo_features(model, tok, device, it.prompt, top_k, pool=pool)
+            except torch.OutOfMemoryError:
+                skipped += 1
+                if device == "cuda":
+                    torch.cuda.empty_cache()
+                gc.collect()
+                print(f"[exp14] {k+1}/{len(items)} OOM-skipped "
+                      f"({it.level}); total skipped={skipped}", flush=True)
+                continue
             rows.append({
                 "id": it.id,
                 "level": it.level,
@@ -122,13 +163,20 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
             })
             if (k + 1) % 20 == 0 or k == 0:
                 acc = np.mean([r["is_correct"] for r in rows])
-                print(f"[exp14] {k+1}/{len(items)} done; acc={acc:.3f} "
+                print(f"[exp14] {k+1}/{len(items)} done; n_kept={len(rows)} "
+                      f"acc={acc:.3f} skipped={skipped} "
                       f"(last: {it.level} correct={int(bool(correct))} "
                       f"ans='{it.answer}' gen='{ans[:30]}')", flush=True)
+            if device == "cuda":
+                torch.cuda.empty_cache()
             gc.collect()
     finally:
+        if pool is not None:
+            pool.shutdown()
         del model
         gc.collect()
+    print(f"[exp14] FINISHED: kept {len(rows)}/{len(items)}, "
+          f"OOM-skipped {skipped}", flush=True)
 
     df = pd.DataFrame(rows)
     df.to_parquet(out)
