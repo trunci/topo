@@ -172,9 +172,9 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
                                       pool=pool, threads=threads)
             except torch.OutOfMemoryError:
                 skipped += 1
+                gc.collect()
                 if device == "cuda":
                     torch.cuda.empty_cache()
-                gc.collect()
                 print(f"[exp14] {k+1}/{len(items)} OOM-skipped "
                       f"({it.level}); total skipped={skipped}", flush=True)
                 continue
@@ -193,9 +193,12 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
                       f"acc={acc:.3f} skipped={skipped} "
                       f"(last: {it.level} correct={int(bool(correct))} "
                       f"ans='{it.answer}' gen='{ans[:30]}')", flush=True)
+            # gc FIRST (drop reference-cycle model outputs / KV cache), THEN
+            # empty_cache can actually reclaim the GPU memory — otherwise the
+            # resident baseline creeps up ~3GB/item and later items OOM.
+            gc.collect()
             if device == "cuda":
                 torch.cuda.empty_cache()
-            gc.collect()
     finally:
         if pool is not None:
             pool.shutdown()

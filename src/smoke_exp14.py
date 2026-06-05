@@ -9,6 +9,7 @@ This does NOT write results — it only measures feasibility/throughput.
 """
 from __future__ import annotations
 
+import gc
 import os
 import time
 import multiprocessing as mp
@@ -59,15 +60,20 @@ def main():
                                       pool=pool, threads=threads)
                 peak = torch.cuda.max_memory_allocated() / 1e9
                 dt = time.time() - t0
+                base = torch.cuda.memory_allocated() / 1e9
                 print(f"[smoke] #{rank+1} len={n} OK  peak_gpu={peak:.1f}GB  "
-                      f"wall={dt:.1f}s  correct={int(bool(correct))} "
+                      f"resident_after={base:.1f}GB wall={dt:.1f}s "
+                      f"correct={int(bool(correct))} "
                       f"frac_nontriv={feats['topo_frac_nontrivial']:.3f}", flush=True)
+                del correct, ans, conf, feats
             except torch.OutOfMemoryError:
                 oom += 1
-                torch.cuda.empty_cache()
                 peak = torch.cuda.max_memory_allocated() / 1e9
                 print(f"[smoke] #{rank+1} len={n} *** OOM *** peak_gpu={peak:.1f}GB",
                       flush=True)
+            # Free between items: gc FIRST so reference-cycle objects (model
+            # outputs / KV cache) are dropped, THEN empty_cache can reclaim them.
+            gc.collect()
             torch.cuda.empty_cache()
     finally:
         pool.shutdown()
