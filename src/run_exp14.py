@@ -22,6 +22,7 @@ Downstream: compute_stats_exp14 -> results/exp14_stats.json
 from __future__ import annotations
 
 import gc
+import multiprocessing as mp
 import os
 from concurrent.futures import ProcessPoolExecutor
 
@@ -41,6 +42,12 @@ N_ITEMS = 200
 SEED = 0
 TOP_K = 8
 N_JOBS = int(os.environ.get("EXP14_N_JOBS", "0")) or (os.cpu_count() or 1)
+
+
+def _worker_init():
+    """Hide the GPU from topology workers — they are pure-CPU and must never
+    initialise a CUDA context (which would squat on GPU memory)."""
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
 def _h1_persist_from_edges(args):
@@ -136,7 +143,12 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
 
     rows = []
     skipped = 0
-    pool = ProcessPoolExecutor(max_workers=N_JOBS) if N_JOBS > 1 else None
+    # 'spawn' context + GPU hidden in workers: topology workers start fresh and
+    # never inherit or create a CUDA context, so they can't squat on GPU memory
+    # (a fork-after-CUDA-init pool orphans workers that hold the model's 14 GB).
+    pool = (ProcessPoolExecutor(max_workers=N_JOBS, mp_context=mp.get_context("spawn"),
+                                initializer=_worker_init)
+            if N_JOBS > 1 else None)
     try:
         for k, it in enumerate(items):
             try:
