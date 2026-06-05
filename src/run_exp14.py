@@ -24,7 +24,7 @@ from __future__ import annotations
 import gc
 import multiprocessing as mp
 import os
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 import numpy as np
 import pandas as pd
@@ -33,9 +33,8 @@ import torch
 from src.attn_extract import (load_named, format_prompt, is_correct,
                               get_attentions_lowmem)
 from src.data_hotpotqa import build_hotpot_items
-from src.topology import symmetrize, sparsify, edges_from_weights, h1_features_from_edges
-from src.induction import attention_distance, offdiag_mass
-from src.residual import attention_entropy
+from src.topology import h1_features_from_edges
+from src.fast_features import dense_features
 
 MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 N_ITEMS = 200
@@ -83,7 +82,8 @@ def _kl_from_uniform(A: np.ndarray) -> float:
 
 @torch.no_grad()
 def topo_features(model, tok, device, text: str, top_k: int,
-                  pool: ProcessPoolExecutor | None = None) -> dict:
+                  pool: ProcessPoolExecutor | None = None,
+                  threads: ThreadPoolExecutor | None = None) -> dict:
     # Low-memory per-layer capture: never holds more than one layer's attention
     # on the GPU, so long contexts don't OOM a 22 GB card holding a 7B model.
     atts, n_seq = get_attentions_lowmem(model, tok, device, text)
@@ -92,18 +92,28 @@ def topo_features(model, tok, device, text: str, top_k: int,
     mats = [layer[h] for layer in atts for h in range(layer.shape[0])]
     n_heads = len(mats)
 
-    # First-order controls are cheap — compute serially in the main process.
-    dist = [attention_distance(A) for A in mats]
-    off  = [offdiag_mass(A) for A in mats]
-    ent  = [attention_entropy(A) for A in mats]
-    kl   = [_kl_from_uniform(A) for A in mats]
+    # Per-head dense features (first-order controls + sparsified edge list),
+    # computed loop-free (src.fast_features) so numpy releases the GIL and a
+    # thread pool parallelises across heads. Identical numbers to the originals
+    # (verified by fast_features.verify_identical). The token-distance matrix is
+    # the same for every head, so build it once and share it.
+    n = mats[0].shape[0]
+    idx = np.arange(n)
+    D = np.abs(idx[None, :] - idx[:, None])
 
-    # Sparsify in the main process (cheap, vectorized) and extract compact edge
-    # lists. Only the edge lists cross the process boundary — not dense matrices.
-    args = []
-    for A in mats:
-        W = sparsify(symmetrize(A), top_k=top_k)
-        args.append(edges_from_weights(W))
+    def _df(A):
+        return dense_features(A, top_k, D)
+
+    if threads is not None:
+        feats_list = list(threads.map(_df, mats))
+    else:
+        feats_list = [_df(A) for A in mats]
+
+    dist = [f["dist"] for f in feats_list]
+    off  = [f["off"]  for f in feats_list]
+    ent  = [f["ent"]  for f in feats_list]
+    kl   = [f["kl"]   for f in feats_list]
+    args = [f["edges"] for f in feats_list]   # compact edge lists for the H1 pool
 
     # H1 persistent homology is the bottleneck — fan it across worker processes.
     if pool is not None:
@@ -149,13 +159,17 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
     pool = (ProcessPoolExecutor(max_workers=N_JOBS, mp_context=mp.get_context("spawn"),
                                 initializer=_worker_init)
             if N_JOBS > 1 else None)
+    # Threads (not processes) for the dense per-head features: the work is numpy
+    # that releases the GIL, so threads parallelise it without pickling matrices.
+    threads = ThreadPoolExecutor(max_workers=N_JOBS) if N_JOBS > 1 else None
     try:
         for k, it in enumerate(items):
             try:
                 correct, ans = is_correct(model, tok, device, it.prompt, it.answer,
                                           max_new_tokens=20)
                 conf = confidence_margin(model, tok, device, it.prompt)
-                feats = topo_features(model, tok, device, it.prompt, top_k, pool=pool)
+                feats = topo_features(model, tok, device, it.prompt, top_k,
+                                      pool=pool, threads=threads)
             except torch.OutOfMemoryError:
                 skipped += 1
                 if device == "cuda":
@@ -185,6 +199,8 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
     finally:
         if pool is not None:
             pool.shutdown()
+        if threads is not None:
+            threads.shutdown()
         del model
         gc.collect()
     print(f"[exp14] FINISHED: kept {len(rows)}/{len(items)}, "

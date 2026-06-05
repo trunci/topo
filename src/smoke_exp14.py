@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import time
 import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 import numpy as np
 import torch
@@ -45,6 +45,7 @@ def main():
     pool = ProcessPoolExecutor(max_workers=N_JOBS,
                                mp_context=mp.get_context("spawn"),
                                initializer=_worker_init)
+    threads = ThreadPoolExecutor(max_workers=N_JOBS)
     oom = 0
     try:
         for rank, (n, it) in enumerate(chosen):
@@ -54,7 +55,8 @@ def main():
                 correct, ans = is_correct(model, tok, device, it.prompt, it.answer,
                                           max_new_tokens=20)
                 conf = confidence_margin(model, tok, device, it.prompt)
-                feats = topo_features(model, tok, device, it.prompt, TOP_K, pool=pool)
+                feats = topo_features(model, tok, device, it.prompt, TOP_K,
+                                      pool=pool, threads=threads)
                 peak = torch.cuda.max_memory_allocated() / 1e9
                 dt = time.time() - t0
                 print(f"[smoke] #{rank+1} len={n} OK  peak_gpu={peak:.1f}GB  "
@@ -69,6 +71,7 @@ def main():
             torch.cuda.empty_cache()
     finally:
         pool.shutdown()
+        threads.shutdown()
     print(f"[smoke] DONE: {N_LONGEST - oom}/{N_LONGEST} survived, OOM={oom}", flush=True)
     if oom == 0:
         print("[smoke] VERDICT: L4 handles the longest contexts -> safe to run all 200 clean.",
