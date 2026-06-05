@@ -31,7 +31,8 @@ def load_named(model_name: str, device: str | None = None,
     tok = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=dtype,
+        dtype=dtype,  # transformers>=5 renamed torch_dtype->dtype; the old name is
+                      # silently ignored, which loads fp32 (28GB) and OOMs the L4.
         attn_implementation="eager",
     )
     model.to(device).eval()
