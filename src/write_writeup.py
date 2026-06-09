@@ -20,7 +20,7 @@ def _f(x, nd=2):
 def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
           q: dict, qs: dict, qm: dict, h: dict, z: dict, za: dict, zk: dict,
           zl: dict, zm: dict, zn: dict, zo: dict, zp: dict, zpr: dict,
-          zp1: dict, zq: dict) -> str:
+          zp1: dict, zq: dict, zqb: dict) -> str:
     # --- spike numbers ---
     nontriv_pct = _f(s["c1_nontriv_frac"] * 100, 1)
     n_sig = s["c2_n_sig"]
@@ -352,6 +352,22 @@ def build(s: dict, e: dict, x: dict, r: dict, g: dict, p: dict,
     zq_beats_toha = ("beats" if zqa["auc"]["topology_only"]["mean_auc"]
                      > zq["toha_reference_auroc"] else "falls below")
     zq_levels = ", ".join(f"{k} {_f(v, 3)}" for k, v in zq["acc_by_level"].items())
+
+    # --- exp14b numbers (length-confound diagnostic on the exp14 features) ---
+    zqb_corr = zqb["length_correlations"]
+    zqb_len_min = zqb["length_stats"]["min"]
+    zqb_len_max = zqb["length_stats"]["max"]
+    zqb_rho_mean = _f(zqb_corr["features"]["topo_mean_persist"]["rho"], 3)
+    zqb_rho_kl = _f(zqb_corr["features"]["ctrl_kl_from_uniform"]["rho"], 3)
+    zqb_rho_frac = _f(zqb_corr["features"]["topo_frac_nontrivial"]["rho"], 3)
+    zqb_rho_y = _f(zqb_corr["len_vs_correct"]["rho"], 3)
+    zqb_dominated = zqb_corr["length_dominated"]
+    zqb_raw = _f(zqb["auc"]["topology_raw"]["mean_auc"], 3)
+    zqb_res = _f(zqb["auc"]["topology_resid"]["mean_auc"], 3)
+    zqb_conf = _f(zqb["auc"]["confidence_only"]["mean_auc"], 3)
+    zqb_adds = zqb["delta_resid_topo_vs_conf"]["adds"]
+    zqb_p = _f(zqb["delta_resid_topo_vs_conf"]["wilcoxon_p"], 4)
+    zqb_verdict = zqb["verdict"]
 
     return f"""# Topology of Attention — Consolidated Writeup
 
@@ -953,7 +969,22 @@ regime where synthetic deep-hop reasoning gave a strong GREEN (Exp 13, hop=5 top
 0.9). Yet on naturalistic HotpotQA the *same* features carry essentially no failure signal,
 and confidence — itself weak here ({zq_conf}) — already dominates them.
 
-This is the honest boundary of the work. Two things matter. First, TOHA reports
+**Exp 14b — why the null: the features are length meters (length-confound diagnostic).**
+A pure re-analysis of the same on-disk features (`results/exp14b_stats.json`) explains the
+mechanism. HotpotQA prompts span {zqb_len_min}–{zqb_len_max} tokens, and the pooled global
+H1 features track that variation almost perfectly — Spearman vs `seq_len`:
+`topo_mean_persist` {zqb_rho_mean}, `ctrl_kl_from_uniform` {zqb_rho_kl},
+`topo_frac_nontrivial` {zqb_rho_frac} — while length itself carries **no** information about
+correctness (rho = {zqb_rho_y}). The features were, in effect, token counters on a dataset
+where token count is noise for the label (length_dominated = {zqb_dominated}). This is the
+Exp 9b demon (Result M) operating in reverse: there, length inflated a positive; here, it
+buries any potential signal. Residualizing the topology features on length (linear +
+quadratic) lifts topology-only AUC from {zqb_raw} to {zqb_res} — still below confidence
+({zqb_conf}) and still not additive (p = {zqb_p}, adds = {zqb_adds}). Verdict:
+**{zqb_verdict}**.
+
+This is the honest boundary of the work, now with its mechanism identified. Three things
+matter. First, TOHA reports
 {zq_toha} with topological attention features on this exact setting, so topology *in principle*
 carries failure signal on real QA — our simpler, hand-specified H1-of-flag-complex
 featurization does not capture it. The gap is the **feature construction**, not topology as a
@@ -961,7 +992,12 @@ concept. Second, the regime-conditional claim (Result P) does **not** transfer f
 synthetic reasoning to open-domain QA: a ~50% base rate is necessary but not sufficient for
 topology to beat confidence. The miscalibration story holds where the task geometry is clean
 and length-controlled (synthetic kinship chains); it collapses where contexts are long,
-heterogeneous, and full of distractor passages.
+heterogeneous, and full of distractor passages. Third (Exp 14b), the proximate cause of the
+collapse is identified: **global H1 features are length-dominated**, and Exp 13's
+template-constant prompt lengths are precisely the condition that let the same features work
+there. This sharpens the null from "topology fails on real QA" to "*global,
+length-confounded* H1 features fail when context length varies ~18x" — and motivates the
+next experiment: the same real-QA task with length geometry controlled (gold-only contexts).
 
 ---
 
@@ -977,7 +1013,10 @@ distinctly when a small model is near its capability ceiling on clean, length-co
 kinship/ordering chains (P — accuracy {zp_acc}, topology AUC {zp_topo_all} vs confidence
 {zp_conf_all}, GREEN in all 3 seeds and both models tested) — yet **collapsing to chance on
 real multi-hop QA at the same accuracy** (Q — Mistral-7B/HotpotQA, topology AUC {zq_topo} vs
-confidence {zq_conf}, RED). As an **attributor**, topology loses to attention magnitude on
+confidence {zq_conf}, RED), with the mechanism identified: the global H1 features are
+**length-dominated** (rho up to {zqb_rho_mean} with seq_len) on a dataset where length is
+uninformative, and length-residualizing them does not rescue the null (Exp 14b,
+{zqb_verdict}). As an **attributor**, topology loses to attention magnitude on
 both induction (K) and the fairer IOI circuit (L).
 
 **Two contributions are novel relative to concurrent work.** TOHA (Bazarova et al., ACL
@@ -1035,6 +1074,10 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
   vs conf {zpr_h5_conf}), hop=4 {zpr_h4_v}. Model generalization (1.5B) also GREEN, with
   topology adding uniquely beyond first-order controls (delta {zp1_delta_ctrl}, p={zp1_p_ctrl}).
   Still two task families (kinship + ordering), synthetic prompts only.
+- Exp 14 (Result Q) saved only pooled per-item features, so no per-head re-analysis (e.g.
+  supervised head selection, TOHA-style) is possible from the stored data; Exp 14b's
+  residualization is the strongest rescue attempt available without re-running the model.
+  Length-residualization uses a quadratic fit; a nonparametric control could differ.
 
 ## 21. Follow-up research directions
 
@@ -1074,7 +1117,7 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, exp13, exp13_replication, and exp13_1p5b). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, exp13_replication, exp13_1p5b, exp14, and exp14b). Regenerate this document with `uv run python -m src.write_writeup`.
 """
 
 
@@ -1093,6 +1136,7 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
          exp13_replication="results/exp13_replication_stats.json",
          exp13_1p5b="results/exp13_1p5b_stats.json",
          exp14="results/exp14_stats.json",
+         exp14b="results/exp14b_stats.json",
          out="WRITEUP.md"):
     s = json.load(open(spike))
     e = json.load(open(exp1))
@@ -1115,7 +1159,8 @@ def main(spike="results/real_stats.json", exp1="results/exp1_stats.json",
     zpr = json.load(open(exp13_replication))
     zp1 = json.load(open(exp13_1p5b))
     zq = json.load(open(exp14))
-    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo, zp, zpr, zp1, zq))
+    zqb = json.load(open(exp14b))
+    open(out, "w").write(build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo, zp, zpr, zp1, zq, zqb))
     print(f"wrote {out}")
 
 

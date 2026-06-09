@@ -1,0 +1,81 @@
+{
+  "based_on": "results/exp14_features.parquet",
+  "n_items": 200,
+  "length_stats": {
+    "min": 210,
+    "median": 1583.0,
+    "max": 3739,
+    "std": 400.0876383579405
+  },
+  "length_correlations": {
+    "features": {
+      "topo_mean_persist": {
+        "rho": 0.947003041727125,
+        "p": 1.3322879648319203e-99
+      },
+      "topo_max_persist": {
+        "rho": 0.41477868509382143,
+        "p": 1.0190772622058022e-09
+      },
+      "topo_frac_nontrivial": {
+        "rho": 0.7158104063171167,
+        "p": 1.0372602773779288e-32
+      },
+      "ctrl_attn_distance": {
+        "rho": 0.9971697904593395,
+        "p": 1.680358581862534e-224
+      },
+      "ctrl_offdiag_mass": {
+        "rho": 0.450001443798481,
+        "p": 2.3064440385258417e-11
+      },
+      "ctrl_attn_entropy": {
+        "rho": 0.7647580971572404,
+        "p": 1.1743397989486676e-39
+      },
+      "ctrl_kl_from_uniform": {
+        "rho": 0.9382802811345488,
+        "p": 3.066500945909235e-93
+      },
+      "confidence_margin": {
+        "rho": -0.018781076277430805,
+        "p": 0.7918084362910134
+      }
+    },
+    "len_vs_correct": {
+      "rho": 0.003755846073763562,
+      "p": 0.9579048557538796
+    },
+    "max_topo_len_rho": 0.947003041727125,
+    "length_dominated": true
+  },
+  "auc": {
+    "topology_raw": {
+      "mean_auc": 0.49411764705882355,
+      "std_auc": 0.06382786089617891,
+      "n_folds": 5
+    },
+    "topology_resid": {
+      "mean_auc": 0.545061871916092,
+      "std_auc": 0.051777126125872826,
+      "n_folds": 5
+    },
+    "confidence_only": {
+      "mean_auc": 0.5787375029063009,
+      "std_auc": 0.1470193175112794,
+      "n_folds": 5
+    },
+    "conf_plus_resid_topo": {
+      "mean_auc": 0.5430093776641091,
+      "std_auc": 0.07168691795699818,
+      "n_folds": 5
+    }
+  },
+  "delta_resid_topo_vs_conf": {
+    "median": 0.024296675191815886,
+    "wilcoxon_p": 0.6875,
+    "adds": false
+  },
+  "resid_topo_beats_chance": true,
+  "verdict": "LENGTH-DOMINATED, NULL-STANDS"
+}

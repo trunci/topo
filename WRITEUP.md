@@ -624,7 +624,22 @@ regime where synthetic deep-hop reasoning gave a strong GREEN (Exp 13, hop=5 top
 0.9). Yet on naturalistic HotpotQA the *same* features carry essentially no failure signal,
 and confidence — itself weak here (0.579) — already dominates them.
 
-This is the honest boundary of the work. Two things matter. First, TOHA reports
+**Exp 14b — why the null: the features are length meters (length-confound diagnostic).**
+A pure re-analysis of the same on-disk features (`results/exp14b_stats.json`) explains the
+mechanism. HotpotQA prompts span 210–3739 tokens, and the pooled global
+H1 features track that variation almost perfectly — Spearman vs `seq_len`:
+`topo_mean_persist` 0.947, `ctrl_kl_from_uniform` 0.938,
+`topo_frac_nontrivial` 0.716 — while length itself carries **no** information about
+correctness (rho = 0.004). The features were, in effect, token counters on a dataset
+where token count is noise for the label (length_dominated = True). This is the
+Exp 9b demon (Result M) operating in reverse: there, length inflated a positive; here, it
+buries any potential signal. Residualizing the topology features on length (linear +
+quadratic) lifts topology-only AUC from 0.494 to 0.545 — still below confidence
+(0.579) and still not additive (p = 0.6875, adds = False). Verdict:
+**LENGTH-DOMINATED, NULL-STANDS**.
+
+This is the honest boundary of the work, now with its mechanism identified. Three things
+matter. First, TOHA reports
 0.71 with topological attention features on this exact setting, so topology *in principle*
 carries failure signal on real QA — our simpler, hand-specified H1-of-flag-complex
 featurization does not capture it. The gap is the **feature construction**, not topology as a
@@ -632,7 +647,12 @@ concept. Second, the regime-conditional claim (Result P) does **not** transfer f
 synthetic reasoning to open-domain QA: a ~50% base rate is necessary but not sufficient for
 topology to beat confidence. The miscalibration story holds where the task geometry is clean
 and length-controlled (synthetic kinship chains); it collapses where contexts are long,
-heterogeneous, and full of distractor passages.
+heterogeneous, and full of distractor passages. Third (Exp 14b), the proximate cause of the
+collapse is identified: **global H1 features are length-dominated**, and Exp 13's
+template-constant prompt lengths are precisely the condition that let the same features work
+there. This sharpens the null from "topology fails on real QA" to "*global,
+length-confounded* H1 features fail when context length varies ~18x" — and motivates the
+next experiment: the same real-QA task with length geometry controlled (gold-only contexts).
 
 ---
 
@@ -648,7 +668,10 @@ distinctly when a small model is near its capability ceiling on clean, length-co
 kinship/ordering chains (P — accuracy 0.525, topology AUC 0.930 vs confidence
 0.681, GREEN in all 3 seeds and both models tested) — yet **collapsing to chance on
 real multi-hop QA at the same accuracy** (Q — Mistral-7B/HotpotQA, topology AUC 0.494 vs
-confidence 0.579, RED). As an **attributor**, topology loses to attention magnitude on
+confidence 0.579, RED), with the mechanism identified: the global H1 features are
+**length-dominated** (rho up to 0.947 with seq_len) on a dataset where length is
+uninformative, and length-residualizing them does not rescue the null (Exp 14b,
+LENGTH-DOMINATED, NULL-STANDS). As an **attributor**, topology loses to attention magnitude on
 both induction (K) and the fairer IOI circuit (L).
 
 **Two contributions are novel relative to concurrent work.** TOHA (Bazarova et al., ACL
@@ -706,6 +729,10 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
   vs conf 0.623), hop=4 GREEN. Model generalization (1.5B) also GREEN, with
   topology adding uniquely beyond first-order controls (delta 0.216, p=0.0312).
   Still two task families (kinship + ordering), synthetic prompts only.
+- Exp 14 (Result Q) saved only pooled per-item features, so no per-head re-analysis (e.g.
+  supervised head selection, TOHA-style) is possible from the stored data; Exp 14b's
+  residualization is the strongest rescue attempt available without re-running the model.
+  Length-residualization uses a quadratic fit; a nonparametric control could differ.
 
 ## 21. Follow-up research directions
 
@@ -745,4 +772,4 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, exp13, exp13_replication, and exp13_1p5b). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, exp13_replication, exp13_1p5b, exp14, and exp14b). Regenerate this document with `uv run python -m src.write_writeup`.
