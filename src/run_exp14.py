@@ -22,6 +22,7 @@ Downstream: compute_stats_exp14 -> results/exp14_stats.json
 from __future__ import annotations
 
 import gc
+import json
 import multiprocessing as mp
 import os
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -149,10 +150,29 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
     print(f"[exp14] {len(items)} HotpotQA bridge items (seed={seed})", flush=True)
     print(f"[exp14] loading {model_name} ({device_str})...", flush=True)
     print(f"[exp14] topology parallelism: {N_JOBS} workers", flush=True)
+    # Per-item checkpoint (JSONL): on a Spot/preemptible VM the run can be
+    # reclaimed mid-way, and results are otherwise only written at the end. We
+    # append each completed row to a .jsonl and resume by skipping done ids, so
+    # a preemption never loses progress — just relaunch the same command.
+    ckpt = os.path.splitext(out)[0] + ".jsonl"
+    rows = []
+    done_ids = set()
+    if os.path.exists(ckpt):
+        with open(ckpt) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                r = json.loads(line)
+                rows.append(r)
+                done_ids.add(r["id"])
+        print(f"[exp14] resuming from checkpoint: {len(done_ids)} items already done",
+              flush=True)
+
     model, tok, device = load_named(model_name, device=device_str)
 
-    rows = []
     skipped = 0
+    ckpt_fh = open(ckpt, "a")
     # 'spawn' context + GPU hidden in workers: topology workers start fresh and
     # never inherit or create a CUDA context, so they can't squat on GPU memory
     # (a fork-after-CUDA-init pool orphans workers that hold the model's 14 GB).
@@ -164,6 +184,8 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
     threads = ThreadPoolExecutor(max_workers=N_JOBS) if N_JOBS > 1 else None
     try:
         for k, it in enumerate(items):
+            if it.id in done_ids:
+                continue
             try:
                 correct, ans = is_correct(model, tok, device, it.prompt, it.answer,
                                           max_new_tokens=20)
@@ -178,7 +200,7 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
                 print(f"[exp14] {k+1}/{len(items)} OOM-skipped "
                       f"({it.level}); total skipped={skipped}", flush=True)
                 continue
-            rows.append({
+            row = {
                 "id": it.id,
                 "level": it.level,
                 "answer": it.answer,
@@ -186,7 +208,11 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
                 "is_correct": int(bool(correct)),
                 "confidence_margin": conf,
                 **feats,
-            })
+            }
+            rows.append(row)
+            ckpt_fh.write(json.dumps(row) + "\n")
+            ckpt_fh.flush()
+            os.fsync(ckpt_fh.fileno())   # durable before a possible preemption
             if (k + 1) % 20 == 0 or k == 0:
                 acc = np.mean([r["is_correct"] for r in rows])
                 print(f"[exp14] {k+1}/{len(items)} done; n_kept={len(rows)} "
@@ -204,6 +230,7 @@ def run(out="results/exp14_features.parquet", model_name=MODEL,
             pool.shutdown()
         if threads is not None:
             threads.shutdown()
+        ckpt_fh.close()
         del model
         gc.collect()
     print(f"[exp14] FINISHED: kept {len(rows)}/{len(items)}, "
