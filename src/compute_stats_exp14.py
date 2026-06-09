@@ -114,7 +114,7 @@ def compute_stats(features_path="results/exp14_features.parquet",
     df = pd.read_parquet(features_path)
 
     stats = {
-        "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "model": "mistralai/Mistral-7B-Instruct-v0.3",
         "dataset": "HotpotQA bridge (validation)",
         "n_items": int(len(df)),
         "overall_accuracy": float(df["is_correct"].mean()),
