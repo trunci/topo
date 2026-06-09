@@ -1,0 +1,97 @@
+{
+  "model": "mistralai/Mistral-7B-Instruct-v0.3",
+  "dataset": "HotpotQA bridge (validation)",
+  "n_items": 200,
+  "overall_accuracy": 0.565,
+  "acc_by_level": {
+    "hard": 0.565
+  },
+  "mean_seq_len": 1608.915,
+  "toha_reference_auroc": 0.71,
+  "all_items": {
+    "n": 200,
+    "acc": 0.565,
+    "verdict": "RED",
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.5787375029063009,
+        "std_auc": 0.1470193175112794,
+        "n_folds": 5
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.5372794440569376,
+        "std_auc": 0.09080285046737091,
+        "n_folds": 5
+      },
+      "topology_only": {
+        "mean_auc": 0.49411764705882355,
+        "std_auc": 0.06382786089617891,
+        "n_folds": 5
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.5517050298380222,
+        "std_auc": 0.06044102748057078,
+        "n_folds": 5
+      },
+      "confidence_plus_ctrl_topo": {
+        "mean_auc": 0.5430222945568215,
+        "std_auc": 0.05599666541184655,
+        "n_folds": 5
+      }
+    },
+    "delta_topo_vs_conf": {
+      "median": -0.008951406649616356,
+      "wilcoxon_p": 0.59375,
+      "adds": false
+    },
+    "delta_topo_vs_ctrl": {
+      "median": 0.007672634271099765,
+      "wilcoxon_p": 0.59375,
+      "adds": false
+    },
+    "topology_beats_chance": false
+  },
+  "hard_items": {
+    "n": 200,
+    "acc": 0.565,
+    "verdict": "RED",
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.5787375029063009,
+        "std_auc": 0.1470193175112794,
+        "n_folds": 5
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.5372794440569376,
+        "std_auc": 0.09080285046737091,
+        "n_folds": 5
+      },
+      "topology_only": {
+        "mean_auc": 0.49411764705882355,
+        "std_auc": 0.06382786089617891,
+        "n_folds": 5
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.5517050298380222,
+        "std_auc": 0.06044102748057078,
+        "n_folds": 5
+      },
+      "confidence_plus_ctrl_topo": {
+        "mean_auc": 0.5430222945568215,
+        "std_auc": 0.05599666541184655,
+        "n_folds": 5
+      }
+    },
+    "delta_topo_vs_conf": {
+      "median": -0.008951406649616356,
+      "wilcoxon_p": 0.59375,
+      "adds": false
+    },
+    "delta_topo_vs_ctrl": {
+      "median": 0.007672634271099765,
+      "wilcoxon_p": 0.59375,
+      "adds": false
+    },
+    "topology_beats_chance": false
+  }
+}

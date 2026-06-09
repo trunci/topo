@@ -8,3 +8,4 @@ results/*.png
 hf_cache/
 .env
 !results/confound_report.txt
+results/*.jsonl
