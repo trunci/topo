@@ -29,6 +29,7 @@ import json
 import multiprocessing as mp
 import os
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 
 import numpy as np
 import pandas as pd
@@ -42,7 +43,12 @@ from src.run_exp14 import (_worker_init, _h1_persist_from_edges,
 
 N_ITEMS = 200
 SEED = 0
-N_JOBS = int(os.environ.get("EXP15_N_JOBS", "0")) or (os.cpu_count() or 1)
+# Gold-only graphs are tiny (~150-350 nodes), so a handful of H1 workers
+# saturates the work. More importantly each SPAWN worker re-imports the full
+# torch/transformers stack (~1GB RSS, no copy-on-write) — 40 workers OOM'd the
+# first L4 host's system RAM and broke the pool. Cap the default hard.
+N_JOBS = (int(os.environ.get("EXP15_N_JOBS", "0"))
+          or min(8, os.cpu_count() or 1))
 
 
 @torch.no_grad()
@@ -137,9 +143,14 @@ def run(out="results/exp15_features.parquet", model_name=MODEL,
 
     skipped = 0
     ckpt_fh = open(ckpt, "a")
-    pool = (ProcessPoolExecutor(max_workers=N_JOBS, mp_context=mp.get_context("spawn"),
-                                initializer=_worker_init)
-            if N_JOBS > 1 else None)
+
+    def _make_pool():
+        return (ProcessPoolExecutor(max_workers=N_JOBS,
+                                    mp_context=mp.get_context("spawn"),
+                                    initializer=_worker_init)
+                if N_JOBS > 1 else None)
+
+    pool = _make_pool()
     threads = ThreadPoolExecutor(max_workers=N_JOBS) if N_JOBS > 1 else None
     try:
         for k, it in enumerate(items):
@@ -158,6 +169,16 @@ def run(out="results/exp15_features.parquet", model_name=MODEL,
                     torch.cuda.empty_cache()
                 print(f"[exp15] {k+1}/{len(items)} OOM-skipped "
                       f"({it.level}); total skipped={skipped}", flush=True)
+                continue
+            except BrokenProcessPool:
+                # A dead worker poisons the whole pool; rebuild it and move on.
+                # The item is NOT checkpointed, so relaunching the run retries it.
+                skipped += 1
+                print(f"[exp15] {k+1}/{len(items)} pool broke — rebuilding; "
+                      f"item left for a resume pass (skipped={skipped})", flush=True)
+                if pool is not None:
+                    pool.shutdown(wait=False, cancel_futures=True)
+                pool = _make_pool()
                 continue
             row = {
                 "id": it.id,
