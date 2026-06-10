@@ -23,9 +23,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_auc_score
 
-from src.compute_stats_exp14 import (_verdict_block, _summary,
-                                     N_SPLITS, SEED, TOHA_AUROC)
-from src.compute_stats_exp14b import length_correlations
+from src.compute_stats_exp14 import (_verdict_block, _summary, _cv_auc,
+                                     N_SPLITS, SEED, TOHA_AUROC, TOPO)
+from src.compute_stats_exp14b import length_correlations, residualize
 
 K_HEADS = 16
 
@@ -76,6 +76,11 @@ def compute_stats(features_path="results/exp15_features.parquet",
         "all_items": _verdict_block(df),
     }
 
+    # secondary: length-residualized pooled topology (the Exp 14b rescue, here)
+    y_all = df["is_correct"].to_numpy(int)
+    X_res = residualize(df, TOPO)[TOPO].to_numpy(float)
+    stats["topology_resid"] = _summary(_cv_auc(X_res, y_all))
+
     # secondary: fold-internal head selection over per-head H1 persistence
     if "ph_tot" in df.columns:
         ph = np.stack(df["ph_tot"].to_numpy())
@@ -115,6 +120,7 @@ def compute_stats(features_path="results/exp15_features.parquet",
               f"(Δ={v['delta_topo_vs_conf']['median']:.3f}, "
               f"p={v['delta_topo_vs_conf']['wilcoxon_p']:.4f})")
         print(f"  topo adds beyond ctrl: {v['delta_topo_vs_ctrl']['adds']}")
+    print(f"  topo length-residualized:  {stats['topology_resid']['mean_auc']:.3f}")
     if "head_selected_topology" in stats:
         print(f"  head-selected topo (exploratory): "
               f"{stats['head_selected_topology']['mean_auc']:.3f}")

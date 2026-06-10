@@ -31,13 +31,19 @@ once the task is hard enough that the model is genuinely miscalibrated — deep-
 kinship/ordering at 0.525 accuracy yields topology AUC 0.930 vs confidence
 0.681 (Exp 13, P, GREEN). **But this does not survive the move to real QA:** on the
 *same* model and benchmark as TOHA (Mistral-7B / HotpotQA bridge), the identical H1 features
-sit at chance (topology AUC 0.494 vs confidence 0.579, Exp 14, Q, RED) — so the
-regime-conditional effect is bounded to clean, length-controlled synthetic tasks. Topology
+sit at chance (topology AUC 0.494 vs confidence 0.579, Exp 14, Q, RED), the
+features turn out to be **length meters** on a dataset where length is uninformative
+(Exp 14b, LENGTH-DOMINATED, NULL-STANDS) — and the rescue that diagnosis suggested **fails**: with
+context geometry controlled (gold-only paragraphs, Exp 15, R, RED), pooled,
+length-residualized, and per-head head-selected topology are *all* still at chance
+(0.459 / 0.478 / 0.499). So the regime-conditional effect is bounded to
+*synthetic, template-generated* tasks. Topology
 *in principle* carries failure signal on real QA (TOHA's engineered features reach
 0.71); our simpler hand-specified featurization does not capture it. Relative to that
 concurrent work, the contributions are: **(1) the regime-conditional claim, with its limit
-mapped** — topology beats confidence when the model is near its ceiling *and* the task
-geometry is clean/synthetic, but the effect does **not** transfer to open-domain QA (Exp 14);
+mapped and mechanistically probed** — topology beats confidence when the model is near its
+ceiling *and* the task is synthetic; the failure on real QA is not explained by length
+confounding or distractor padding alone (Exp 14, 14b, 15);
 **(2) the mechanistic decomposition by scale** — for small models topology proxies
 attention entropy, for larger models it adds uniquely via `topo_frac_nontrivial`. The durable
 contribution is the **adversarial, baseline-benchmarked methodology** — including the
@@ -656,7 +662,46 @@ next experiment: the same real-QA task with length geometry controlled (gold-onl
 
 ---
 
-## 19. Synthesis
+## 19. Result R — Gold-only HotpotQA: geometry control does NOT rescue topology (Exp 15): RED
+
+Exp 14b left one live hypothesis: maybe topology failed on HotpotQA only because the
+features were length-dominated on wildly varying contexts. Exp 15 is the decisive
+factor-isolation: the **same 200 bridge items, same model, same pipeline**, but each
+context cut to its 2 gold supporting paragraphs — short (125–618
+tokens, std 88 vs Exp 14's 400), distractor-free, while the task stays real.
+This run also persists **per-head** features (the Exp 14 schema lesson), enabling a
+fold-internal head-selection probe — the cheapest TOHA-flavoured featurization.
+
+| feature set | failure-prediction AUC |
+|---|---|
+| confidence only | 0.560 |
+| topology only (pooled, as Exp 13/14) | 0.459 |
+| topology, length-residualized (as Exp 14b) | 0.478 |
+| topology, per-head + fold-internal head selection | 0.499 |
+
+- Accuracy rises to 0.650 (from 0.565 with distractors) — gold-only is easier,
+  as expected.
+- Topology adds beyond confidence: **False** (p = 1.0000).
+- The topology features remain length-correlated even within the tight band
+  (max rho = 0.942), and length remains uninformative (rho with correctness
+  -0.006) — but now the *residualized* and *head-selected* variants are also
+  cleanly at chance, so the length account no longer shields the features.
+
+**Verdict: RED.** Controlling context geometry — the one variable Exp 14b
+nominated — does **not** rescue topology on real QA. Three independent featurizations
+(pooled, length-residualized, per-head selected) all sit at chance. The Exp 13 → Exp 14
+boundary is therefore **not** (only) about length heterogeneity or distractor padding:
+even short, clean, two-paragraph real-world QA defeats these H1 features. The
+regime-conditional claim (Result P) is bounded to *synthetic, template-generated*
+reasoning tasks, full stop. One honest qualifier: gold-only accuracy (0.650) sits
+above the deep-miscalibration band (~0.50–0.55) where Exp 13 was strongest, so Exp 15
+jointly tests "real task + easier regime" rather than the real task alone; but the
+head-selected probe at 0.499 — chance, with supervision — argues the features
+simply carry no signal here.
+
+---
+
+## 20. Synthesis
 
 Topology **locates** where reasoning structure lives (A), carries **genuine, non-redundant**
 information about a known circuit once confounds are controlled (D), and that non-redundancy
@@ -671,7 +716,11 @@ real multi-hop QA at the same accuracy** (Q — Mistral-7B/HotpotQA, topology AU
 confidence 0.579, RED), with the mechanism identified: the global H1 features are
 **length-dominated** (rho up to 0.947 with seq_len) on a dataset where length is
 uninformative, and length-residualizing them does not rescue the null (Exp 14b,
-LENGTH-DOMINATED, NULL-STANDS). As an **attributor**, topology loses to attention magnitude on
+LENGTH-DOMINATED, NULL-STANDS). The geometry-control test that diagnosis motivated also fails: on
+gold-only contexts (R — same items, length std 88, no distractors), pooled
+(0.459), residualized (0.478), and head-selected (0.499) topology all
+remain at chance — the boundary is real-task semantics, not context geometry. As an
+**attributor**, topology loses to attention magnitude on
 both induction (K) and the fairer IOI circuit (L).
 
 **Two contributions are novel relative to concurrent work.** TOHA (Bazarova et al., ACL
@@ -691,7 +740,7 @@ appropriately narrow: this hand-specified H1 featurization is a useful failure s
 clean, controlled reasoning tasks near a model's capability boundary — it does **not**
 generalize to open-domain QA, where a purpose-built topological method (TOHA) is needed.
 
-## 20. Honest caveats
+## 21. Honest caveats
 
 - All GPT-2 experiments (2-5) are small, memory-safe CPU runs (144 heads, n_seqs<=8); the
   Spike is the largest and most robust run. Directions are clear; magnitudes are not nailed.
@@ -733,8 +782,13 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
   supervised head selection, TOHA-style) is possible from the stored data; Exp 14b's
   residualization is the strongest rescue attempt available without re-running the model.
   Length-residualization uses a quadratic fit; a nonparametric control could differ.
+- Exp 15 (Result R) is single-seed, n=200, and its gold-only accuracy (0.650) sits
+  above the deep-miscalibration band where Exp 13 was strongest — it jointly tests "real
+  task + somewhat easier regime". Its head-selection probe (K=16 heads, fold-internal) is
+  exploratory and far simpler than TOHA's featurization; it bounds *our* features, not
+  topological methods generally.
 
-## 21. Follow-up research directions
+## 22. Follow-up research directions
 
 1. **Residual-information test (is topology redundant?).** ✅ DONE — Exp 3 (Result D): H1 is
    *not* redundant with first-order stats for induction (delta-R2 = 0.074, F p = 0.00044,
@@ -759,7 +813,12 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
    adds beyond confidence if and only if accuracy is near 50% (model at capability ceiling).
    Concurrent: TOHA (Bazarova et al., ACL 2026) validates the attention-topology-for-failure
    direction independently (AUROC 0.71 on HotpotQA/Mistral-7B). Our novel additions: the
-   conditional framing and the mechanistic decomposition by model scale.
+   conditional framing and the mechanistic decomposition by model scale. The limit is now
+   fully mapped: chance on real QA with full contexts (Exp 14, Q), the features shown to be
+   length-dominated there (Exp 14b), and still chance after controlling geometry with
+   gold-only contexts — under pooled, residualized, AND head-selected featurizations
+   (Exp 15, R). This lead is **closed** for hand-specified H1 features; reviving it on real
+   QA requires TOHA-class feature engineering, which is their contribution, not ours.
 
 5. **Topological attribution (does topology find circuit edges?).** ✅ DONE — Exp 9
    (Result K, induction), Exp 10 (Result L, IOI), Exp 11 (Result N, clean IOI causal):
@@ -768,8 +827,9 @@ generalize to open-domain QA, where a purpose-built topological method (TOHA) is
    descriptive, not a practical attributor. The length-controlled "Fiedler beyond H1" shape
    lead is also closed: Result M (Exp 9b) showed it is a sequence-length artifact.
 
-## 22. Provenance
+## 23. Provenance
 
 All experiment verdicts are machine-checked fields in their respective JSON files
 (spike, exp1-exp5, exp6 + sweep + gpt2-medium, exp7, exp8, exp9a, exp9, exp10,
-exp9b_length, exp11, exp12, exp13, exp13_replication, exp13_1p5b, exp14, and exp14b). Regenerate this document with `uv run python -m src.write_writeup`.
+exp9b_length, exp11, exp12, exp13, exp13_replication, exp13_1p5b, exp14, exp14b, and
+exp15). Regenerate this document with `uv run python -m src.write_writeup`.

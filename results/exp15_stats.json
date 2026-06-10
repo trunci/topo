@@ -1,0 +1,118 @@
+{
+  "model": "mistralai/Mistral-7B-Instruct-v0.3",
+  "dataset": "HotpotQA bridge (validation), GOLD-ONLY contexts",
+  "n_items": 200,
+  "overall_accuracy": 0.65,
+  "mean_seq_len": 305.615,
+  "seq_len_stats": {
+    "min": 125,
+    "median": 301.5,
+    "max": 618,
+    "std": 88.29573864185949
+  },
+  "toha_reference_auroc": 0.71,
+  "length_correlations": {
+    "features": {
+      "topo_mean_persist": {
+        "rho": 0.9424456280785057,
+        "p": 3.7395705401220524e-96
+      },
+      "topo_max_persist": {
+        "rho": 0.39072103482664416,
+        "p": 1.06521494729695e-08
+      },
+      "topo_frac_nontrivial": {
+        "rho": 0.9033303066354109,
+        "p": 1.0288928599011819e-74
+      },
+      "ctrl_attn_distance": {
+        "rho": 0.9986836790168282,
+        "p": 2.2085468144463608e-257
+      },
+      "ctrl_offdiag_mass": {
+        "rho": 0.9337969088817893,
+        "p": 2.5357840217970014e-90
+      },
+      "ctrl_attn_entropy": {
+        "rho": 0.9017199186913488,
+        "p": 4.865011867530505e-74
+      },
+      "ctrl_kl_from_uniform": {
+        "rho": 0.9812264819564193,
+        "p": 1.7326270607535595e-143
+      },
+      "confidence_margin": {
+        "rho": -0.012064525348511308,
+        "p": 0.8653602082334052
+      }
+    },
+    "len_vs_correct": {
+      "rho": -0.005719638983632802,
+      "p": 0.9359337944397523
+    },
+    "max_topo_len_rho": 0.9424456280785057,
+    "length_dominated": true
+  },
+  "all_items": {
+    "n": 200,
+    "acc": 0.65,
+    "verdict": "RED",
+    "auc": {
+      "confidence_only": {
+        "mean_auc": 0.5601648351648352,
+        "std_auc": 0.09987085610933788,
+        "n_folds": 5
+      },
+      "confidence_plus_topology": {
+        "mean_auc": 0.4450549450549451,
+        "std_auc": 0.0708556908203415,
+        "n_folds": 5
+      },
+      "topology_only": {
+        "mean_auc": 0.4593406593406593,
+        "std_auc": 0.06948757532988485,
+        "n_folds": 5
+      },
+      "confidence_plus_controls": {
+        "mean_auc": 0.4917582417582418,
+        "std_auc": 0.11026036525587575,
+        "n_folds": 5
+      },
+      "confidence_plus_ctrl_topo": {
+        "mean_auc": 0.44010989010989016,
+        "std_auc": 0.06335143390831294,
+        "n_folds": 5
+      }
+    },
+    "delta_topo_vs_conf": {
+      "median": -0.0975274725274724,
+      "wilcoxon_p": 1.0,
+      "adds": false
+    },
+    "delta_topo_vs_ctrl": {
+      "median": -0.002747252747252682,
+      "wilcoxon_p": 0.84375,
+      "adds": false
+    },
+    "topology_beats_chance": false
+  },
+  "topology_resid": {
+    "mean_auc": 0.4780219780219781,
+    "std_auc": 0.08851100930542317,
+    "n_folds": 5
+  },
+  "head_selected_topology": {
+    "mean_auc": 0.49945054945054945,
+    "std_auc": 0.08525163956230888,
+    "n_folds": 5,
+    "k_heads": 16,
+    "note": "exploratory, fold-internal selection"
+  },
+  "exp14_comparison": {
+    "exp14_acc": 0.565,
+    "exp14_mean_seq_len": 1608.915,
+    "exp14_topology_auc": 0.49411764705882355,
+    "exp14_confidence_auc": 0.5787375029063009,
+    "exp14_verdict": "RED"
+  }
+}
