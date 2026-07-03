@@ -37,6 +37,10 @@ Mistral-7B-Instruct-v0.3, greedy, identical pipeline.
 **H-B1 (provenance, primary).** On the distractor-correct subset, span-resolved
 per-head features (fold-internal top-10 head selection, exp16 protocol)
 classify parametric vs context-derived answers.
+*Amendment 2026-07-03, before any Exp 18 data was inspected:* the primary
+per-head family for the H-B1/H-B2 verdicts is the per-head **gold-mass
+fraction** gold/(gold+distractor); gold-mass, distractor-mass, and
+question-mass families are reported as secondary, no verdicts.
 - GREEN iff bootstrap AUC CI95 lower bound > 0.5 AND beats the confidence
   baseline AND beats the pooled total-context-attention-mass baseline (both
   ΔAUC bootstrap one-sided p < 0.05).

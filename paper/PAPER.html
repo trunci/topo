@@ -60,8 +60,8 @@ raw attention magnitude as a circuit attributor (AUC 0.501 vs 0.976 on
 induction; 0.458 vs 0.963 on IOI), adds nothing as a pruning criterion, and its
 apparent "information-flow" signal decomposes first into graph connectivity and then
 into a sequence-length artifact. Critically, the failure-prediction result does not
-transfer to real QA: on the same model and benchmark as the concurrent TOHA method
-(Mistral-7B / HotpotQA), the identical features sit at chance (AUC 0.494, vs
+transfer to real QA: on the benchmark and model family of the concurrent TOHA method
+(Mistral-7B-Instruct / HotpotQA), the identical features sit at chance (AUC 0.494, vs
 TOHA's engineered 0.71), remain at chance after length residualization
 (0.545), and remain at chance with supervised head selection on distractor-free
 gold contexts (0.499). Nor is the boundary merely our featurization:
@@ -127,9 +127,11 @@ directed, budget-matched ablation. Topology is not decorative; it is simply much
 narrower than proposed.</p>
 <h2>2. Related work</h2>
 <p><strong>Topological probes of attention.</strong> Closest to our failure-prediction experiments is
-TOHA (Bazarova et al., ACL 2026; arXiv:2504.10063), which engineers topological
+TOHA (Bazarova et al., ACL 2026; arXiv:2504.10063v3), which engineers topological
 features of attention maps for hallucination detection and reports AUROC 0.71 on
-HotpotQA with Mistral-7B — the exact setting of our Experiments 14–16. TOHA validates
+HotpotQA with Mistral-7B-Instruct-v0.1 (the HotpotQA numbers appear in the v3
+revision) — the setting of our Experiments 14–16, which use v0.3 of the same model
+(§7). TOHA validates
 the <em>direction</em>; our contribution relative to it is the regime map (when topology adds
 beyond confidence and when it cannot), head-to-head nulls on their own benchmark for
 both hand-specified H1 features and a reimplementation of their MTop-Div metric
@@ -364,8 +366,8 @@ the first-order controls alone reach AUC 0.991, matching topology's
 1.5B model it is not: controls reach 0.734, adding topology lifts it to
 0.948 (ΔAUC = 0.216, p = 0.0312) — a structural signal beyond
 entropy, appearing only at the larger scale.</p>
-<p><strong>The boundary.</strong> On the same model and benchmark as TOHA — Mistral-7B on HotpotQA
-bridge questions, full 10-paragraph distractor contexts, n = 200, accuracy
+<p><strong>The boundary.</strong> On TOHA's benchmark and model family — Mistral-7B-Instruct on
+HotpotQA bridge questions, full 10-paragraph distractor contexts, n = 200, accuracy
 0.565 (inside the miscalibration band) — the identical features are at chance:
 topology AUC 0.494, confidence 0.579, TOHA's engineered features 0.71.
 Diagnosis: the prompts span 210–3739 tokens and the pooled H1 features
@@ -454,8 +456,10 @@ featurization tested — hand-specified or engineered — survives naturalistic 
 Reconciling this with TOHA's reported result now requires diagnosis rather than
 assertion: candidate explanations are protocol differences (annotation-based
 hallucination labels vs our substring-match correctness, their item mix vs our
-bridge-only slice, sampling vs greedy decoding, and their probe-set head-selection
-budget), and adjudicating them is the natural next experiment.</p>
+bridge-only slice, sampling vs greedy decoding, their probe-set head-selection
+budget, and the model revision — TOHA evaluates Mistral-7B-Instruct-v0.1, we v0.3).
+TOHA's released implementation makes an artifact-level comparison on our items
+feasible, and adjudicating these axes is the natural next experiment.</p>
 <p><strong>Scale.</strong> The mechanistic split — entropy proxy at 0.5B, entropy-orthogonal signal
 at 1.5B — cautions against extrapolating any single-model topology result in either
 direction. What topology <em>measures</em> appears to change with capacity.</p>
@@ -470,9 +474,12 @@ supervised head-selection probe is far simpler than TOHA's featurization. Experi
 16 closes part of that gap — it scores TOHA's own metric — but is still not a full
 replication of their protocol: we use greedy decoding, substring-match correctness
 labels rather than annotated hallucination labels, bridge questions only, and
-fold-internal head selection on ≤160 training items; a null here bounds MTop-Div
-<em>under our evaluation</em>, not TOHA's published result. All synthetic results use two
-task families (kinship, ordering) and template prompts. The fold-level Wilcoxon p-values
+fold-internal head selection on ≤160 training items; and our runs use
+Mistral-7B-Instruct-v0.3 where TOHA's published numbers are for v0.1. Experiment 16
+is a from-paper reimplementation of the MTop-Div metric rather than a run of TOHA's
+released artifact; a null here bounds MTop-Div <em>under our
+evaluation</em>, not TOHA's published result. All synthetic results use two task
+families (kinship, ordering) and template prompts. The fold-level Wilcoxon p-values
 (0.0312) sit at the resolution floor of a five-fold test (§3); the item-level
 bootstrap CIs of §5.3, whose lower bounds stay well clear of zero, carry the
 statistical weight of the ΔAUC claims.</p>
@@ -488,7 +495,8 @@ and length" as the entry bar for topological claims about transformers.</p>
 <h2>References</h2>
 <ul>
 <li>Bazarova, A., et al. (2026). <em>Hallucination Detection in LLMs with Topological
-  Divergence on Attention Graphs.</em> ACL 2026. arXiv:2504.10063.</li>
+  Divergence on Attention Graphs.</em> ACL 2026. arXiv:2504.10063 (v3; the HotpotQA
+  results cited here appear from v3 onward).</li>
 <li>Bodnar, C., et al. (2022). <em>Neural Sheaf Diffusion: A topological perspective on
   heterophily and oversmoothing in GNNs.</em> NeurIPS 2022.</li>
 <li>Edelsbrunner, H., &amp; Harer, J. (2010). <em>Computational Topology: An Introduction.</em>

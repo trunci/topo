@@ -21,6 +21,12 @@ carries the difference? The paper currently names four candidates and says
 4. **Selection budget.** Our head selection is fold-internal (≤160 items);
    TOHA optimizes head count on a labeled probe set. Give MTop-Div the same
    budget on a disjoint probe set and score on held-out items.
+5. **Model revision.** TOHA's published HotpotQA numbers (arXiv v3) are for
+   Mistral-7B-Instruct-**v0.1**; Exps 14–16 use v0.3. Re-run exp16 with v0.1.
+6. **Artifact-level comparison.** TOHA's code is released
+   (anonymous.4open.science/r/tda4hallucinations-C449, v3 footnote 1): run
+   *their* implementation on *our* items — removes all reimplementation doubt
+   in one shot and should be the first axis after labels.
 
 Run axis 1 first — it is free (features are persisted per head in
 `results/exp16_*_features.parquet`) and the most likely culprit: label noise
