@@ -52,12 +52,19 @@ def fig_regime_map(out="results/fig_regime_map.png"):
     e13b = _j("exp13_1p5b_stats")["all_items"]
     e14 = _j("exp14_stats")["all_items"]
     e15 = _j("exp15_stats")["all_items"]
+    e16 = _j("exp16_stats")
 
     def row(label, s):
         acc = s.get("base_rate_correct", s.get("acc"))
         return (label.format(acc=acc),
                 s["auc"]["topology_only"]["mean_auc"],
                 s["auc"]["confidence_only"]["mean_auc"])
+
+    def row16(label, cond):
+        c = e16[cond]
+        return (label.format(acc=c["acc"]),
+                c["bootstrap"]["head_selected"]["auc"],
+                c["auc"]["confidence_only"]["mean_auc"])
 
     # top -> bottom narrative order
     rows = [
@@ -67,10 +74,12 @@ def fig_regime_map(out="results/fig_regime_map.png"):
         row("1.5B, 3–5 hops (acc {acc:.2f})", e13b),
         row("distractor contexts (acc {acc:.2f})", e14),
         row("gold-only contexts (acc {acc:.2f})", e15),
+        row16("MTop-Div, distractor (acc {acc:.2f})", "distractor"),
+        row16("MTop-Div, gold-only (acc {acc:.2f})", "gold"),
     ]
-    groups = [("SYNTHETIC · QWEN2.5", 0, 4), ("HOTPOTQA · MISTRAL-7B", 4, 6)]
+    groups = [("SYNTHETIC · QWEN2.5", 0, 4), ("HOTPOTQA · MISTRAL-7B", 4, 8)]
 
-    fig, ax = plt.subplots(figsize=(6.3, 2.9))
+    fig, ax = plt.subplots(figsize=(6.3, 3.5))
     ys = np.arange(len(rows))[::-1].astype(float)
     ys[4:] -= 0.55  # breathing room between the two groups
 

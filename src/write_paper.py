@@ -18,7 +18,7 @@ def _f(x, nd=3):
 
 
 def build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo,
-          zp, zpr, zp1, zq, zqb, zr, zmech, zboot) -> str:
+          zp, zpr, zp1, zq, zqb, zr, zmech, zboot, zt) -> str:
     # ---- spike ----
     s_nontriv = _f(s["c1_nontriv_frac"] * 100, 1)
     s_nsig = s["c2_n_sig"]
@@ -166,6 +166,19 @@ def build(s, e, x, r, g, p, q, qs, qm, h, z, za, zk, zl, zm, zn, zo,
     zr_res = _f(zr["topology_resid"]["mean_auc"], 3)
     zr_heads = _f(zr["head_selected_topology"]["mean_auc"], 3)
 
+    # ---- exp16: TOHA-style MTop-Div head-to-head ----
+    zt_hs_d = zt["distractor"]["bootstrap"]["head_selected"]
+    zt_hs_g = zt["gold"]["bootstrap"]["head_selected"]
+    zt_d_auc = _f(zt_hs_d["auc"], 3)
+    zt_d_lo = _f(zt_hs_d["ci95"][0], 3)
+    zt_d_hi = _f(zt_hs_d["ci95"][1], 3)
+    zt_g_auc = _f(zt_hs_g["auc"], 3)
+    zt_g_lo = _f(zt_hs_g["ci95"][0], 3)
+    zt_g_hi = _f(zt_hs_g["ci95"][1], 3)
+    zt_d_pool = _f(zt["distractor"]["bootstrap"]["pooled_mtd"]["auc"], 3)
+    zt_g_pool = _f(zt["gold"]["bootstrap"]["pooled_mtd"]["auc"], 3)
+    zt_top = zt["top_heads"]
+
     return f"""# When Does Attention Topology Know the Model Is Wrong? Mapping the Narrow Regime Where Persistent Homology Beats Confidence
 
 **Eduardo Trunci**
@@ -203,7 +216,10 @@ transfer to real QA: on the same model and benchmark as the concurrent TOHA meth
 (Mistral-7B / HotpotQA), the identical features sit at chance (AUC {zq_topo}, vs
 TOHA's engineered {zq_toha}), remain at chance after length residualization
 ({zqb_res}), and remain at chance with supervised head selection on distractor-free
-gold contexts ({zr_heads}). The regime where hand-specified attention topology beats
+gold contexts ({zr_heads}). Nor is the boundary merely our featurization:
+reimplementing TOHA's own MTop-Div (generation-time answer-to-prompt divergence)
+on the same items also fails to beat chance under fold-internal head selection
+({zt_d_auc} distractor / {zt_g_auc} gold). The regime where attention topology beats
 confidence is real but narrow: clean, template-generated reasoning at the model's
 capability boundary. We offer the audit methodology — control first-order statistics,
 verify instruments, benchmark against magnitude and confidence — as the durable
@@ -238,8 +254,9 @@ decomposition, and a catalogue of instructive failures:
    the model's own confidence — but only when the model is at its capability ceiling
    (accuracy near 0.5) on clean, template-generated multi-hop reasoning. On easy tasks
    the signal is fully redundant with confidence; on naturalistic multi-hop QA at the
-   same ~0.5 accuracy it vanishes entirely, surviving neither length residualization
-   nor supervised head selection. The regime is real, replicable (three seeds, two
+   same ~0.5 accuracy it vanishes entirely, surviving neither length residualization,
+   nor supervised head selection, nor replacement of our features by TOHA-style
+   generation-time divergence. The regime is real, replicable (three seeds, two
    model scales) — and narrow.
 
 2. **A mechanism that changes with scale.** In the regime where topology works, *why*
@@ -266,10 +283,11 @@ narrower than proposed.
 **Topological probes of attention.** Closest to our failure-prediction experiments is
 TOHA (Bazarova et al., ACL 2026; arXiv:2504.10063), which engineers topological
 features of attention maps for hallucination detection and reports AUROC {zq_toha} on
-HotpotQA with Mistral-7B — the exact setting of our Experiments 14–15. TOHA validates
+HotpotQA with Mistral-7B — the exact setting of our Experiments 14–16. TOHA validates
 the *direction*; our contribution relative to it is the regime map (when topology adds
-beyond confidence and when it cannot), the head-to-head null for hand-specified H1
-features on their own benchmark, and the scale-dependent mechanism. Attention-based
+beyond confidence and when it cannot), head-to-head nulls on their own benchmark for
+both hand-specified H1 features and a reimplementation of their MTop-Div metric
+(Experiment 16), and the scale-dependent mechanism. Attention-based
 uncertainty probes more broadly include KL-divergence attention probes
 (van Dijk, 2026) and semantic-entropy methods (Farquhar et al., 2024), which our
 confidence baseline proxies in spirit: any topology claim must beat what the model
@@ -405,16 +423,17 @@ R² = {zm_hop_r2} of hop variance, and Fiedler's contribution beyond a
 length-augmented baseline is ΔR² = {zm_dr2}, below the pre-registered 0.02 floor.
 Both the "flow beats shape" and "better shape statistic" readings were withdrawn.
 
-### 5.3 Failure prediction does not survive real QA (Experiments 7, 12–15)
+### 5.3 Failure prediction does not survive real QA (Experiments 7, 12–16)
 
 ![Regime map]({FIG_REGIME_MAP})
 
 *Figure 2: The regime map. Failure-prediction AUC of topology (blue circles)
-vs the model's own confidence (green squares) across the six evaluation
+vs the model's own confidence (green squares) across the eight evaluation
 regimes, each labeled with task accuracy. Topology decisively beats confidence
 only on synthetic multi-hop reasoning at the capability ceiling (middle rows);
 on easy tasks it is redundant, and on naturalistic HotpotQA (bottom group)
-it collapses to chance.*
+it collapses to chance — for our H1 features and for the TOHA-style MTop-Div
+reimplementation alike (bottom two rows).*
 
 This is the audit's sharpest arc. On easy synthetic reasoning (accuracy {h_acc}),
 topology predicts errors above chance (AUC {h_topo}) but adds nothing beyond
@@ -456,6 +475,21 @@ chance against confidence ({zr_conf}). Geometry control does not rescue the
 features; the boundary is the move from template-generated to naturalistic tasks
 itself.
 
+**Engineered features do not cross it either.** The remaining hypothesis was that
+the boundary is *feature construction*: our features summarize prompt-encoding
+persistence, while TOHA scores how the generated answer's tokens attach to the
+prompt. Experiment 16 tests this by reimplementing TOHA's MTop-Div (the minimal
+spanning forest cost attaching answer tokens to the prompt in generation-time
+attention, per head, length-normalized) on the same 200 items, with the TOHA
+protocol's top-{zt_top} head selection made fold-internal. Pre-registered verdict:
+RED in both geometries. Head-selected MTop-Div reaches AUC {zt_d_auc}
+(95% CI [{zt_d_lo}, {zt_d_hi}]) on distractor contexts and {zt_g_auc}
+(CI [{zt_g_lo}, {zt_g_hi}]) on gold-only contexts — chance in both, adding nothing
+beyond confidence or response-entropy controls, and far from TOHA's reported
+{zq_toha} (pooled variants: {zt_d_pool} / {zt_g_pool}). Whatever separates our
+setting from TOHA's reported result, it is not the choice between hand-specified
+persistence and their divergence metric.
+
 ### 5.4 Pruning (Experiment 1)
 
 At equal per-head edge budget, retaining discrete-Morse critical cells loses to
@@ -487,10 +521,17 @@ first-order statistics genuinely miss, even though that something is not practic
 extractable by our hand-specified features outside controlled settings; and (b) as a
 *failure signal in the narrow regime*: clean task geometry, model at its capability
 ceiling, where it can be dramatically better than confidence ({zp_h5_topo} vs
-{zp_h5_conf} at hop 5). TOHA's {zq_toha} on naturalistic multi-hop QA shows engineered
-topological features can cross the boundary our hand-specified ones cannot; the gap
-is feature construction, and closing it without supervision is the natural next
-problem.
+{zp_h5_conf} at hop 5). We conjectured that TOHA's {zq_toha} on naturalistic QA
+meant engineered features could cross the boundary our hand-specified ones cannot —
+that the gap was feature construction. Experiment 16 falsified that conjecture in
+our setting: TOHA's own MTop-Div metric, reimplemented on our items, is also at
+chance ({zt_d_auc} / {zt_g_auc}). On our evidence, no attention-topology
+featurization tested — hand-specified or engineered — survives naturalistic QA.
+Reconciling this with TOHA's reported result now requires diagnosis rather than
+assertion: candidate explanations are protocol differences (annotation-based
+hallucination labels vs our substring-match correctness, their item mix vs our
+bridge-only slice, sampling vs greedy decoding, and their probe-set head-selection
+budget), and adjudicating them is the natural next experiment.
 
 **Scale.** The mechanistic split — entropy proxy at 0.5B, entropy-orthogonal signal
 at 1.5B — cautions against extrapolating any single-model topology result in either
@@ -504,9 +545,13 @@ and n = {zq_n} items for each HotpotQA condition. The confidence baseline is a l
 margin, not a calibrated probability. The sheaf construction is non-learned. Gold-only
 accuracy ({zr_acc}) sits above the deep-miscalibration band where the synthetic effect
 is strongest, so Experiment 15 jointly tests "real task + easier regime"; its
-supervised head-selection probe is far simpler than TOHA's featurization and bounds
-our features, not topological methods generally. All synthetic results use two task
-families (kinship, ordering) and template prompts. The fold-level Wilcoxon p-values
+supervised head-selection probe is far simpler than TOHA's featurization. Experiment
+16 closes part of that gap — it scores TOHA's own metric — but is still not a full
+replication of their protocol: we use greedy decoding, substring-match correctness
+labels rather than annotated hallucination labels, bridge questions only, and
+fold-internal head selection on ≤160 training items; a null here bounds MTop-Div
+*under our evaluation*, not TOHA's published result. All synthetic results use two
+task families (kinship, ordering) and template prompts. The fold-level Wilcoxon p-values
 ({zp_p}) sit at the resolution floor of a five-fold test (§3); the item-level
 bootstrap CIs of §5.3, whose lower bounds stay well clear of zero, carry the
 statistical weight of the ΔAUC claims.
@@ -564,7 +609,7 @@ def main(out="PAPER.md"):
         j("exp9_stats"), j("exp10_stats"), j("exp9b_length_stats"), j("exp11_stats"),
         j("exp12_stats"), j("exp13_stats"), j("exp13_replication_stats"),
         j("exp13_1p5b_stats"), j("exp14_stats"), j("exp14b_stats"), j("exp15_stats"),
-        j("exp13_mech_stats"), j("exp13_bootstrap_stats"))
+        j("exp13_mech_stats"), j("exp13_bootstrap_stats"), j("exp16_stats"))
     open(out, "w").write(doc)
     print(f"wrote {out}")
 
