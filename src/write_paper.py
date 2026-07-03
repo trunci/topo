@@ -327,10 +327,7 @@ run (e.g., "GREEN iff ΔR² ≥ 0.02 *and* nested-F p < 0.05"; "GREEN iff topolo
 AUC beyond confidence at paired-Wilcoxon p < 0.05"). All verdicts are machine-checked
 fields in per-experiment JSON files, from which this document is generated.
 Pre-registration is verifiable in the repository history
-(https://github.com/trunci/topo): each experiment's code and
-verdict rule are committed before its results land — for the HotpotQA experiments,
-pre-registration commits `16ceb0d` / `b065b24` / `32e1169` precede results commits
-`436d40f` / `037834f` / `f9d9a6b` (Experiments 14 / 15 / 16 respectively).
+(https://github.com/trunci/topo).
 
 **Models and tasks.** Qwen2.5-0.5B/1.5B-Instruct (synthetic kinship/ordering
 reasoning, 1–5 hops), GPT-2 small/medium and distilgpt2 (induction, previous-token,
