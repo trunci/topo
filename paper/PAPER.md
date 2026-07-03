@@ -191,7 +191,7 @@ unique signal. Generalizing over 2 models × 3 circuits:
 positional circuit. Topology earns its keep exactly where the circuit has
 multi-position relational structure, and nowhere simpler.
 
-![Suppression effect](results/fig_suppression.png)
+![Suppression effect](figures/fig_suppression.png)
 
 *Figure 1: The suppression effect (GPT-2, 144 heads; Experiment 3). Marginally,
 per-head H1 persistence is uncorrelated with independently-measured induction
@@ -251,7 +251,7 @@ Both the "flow beats shape" and "better shape statistic" readings were withdrawn
 
 ### 5.3 Failure prediction does not survive real QA (Experiments 7, 12–16)
 
-![Regime map](results/fig_regime_map.png)
+![Regime map](figures/fig_regime_map.png)
 
 *Figure 2: The regime map. Failure-prediction AUC of topology (blue circles)
 vs the model's own confidence (green squares) across the eight evaluation

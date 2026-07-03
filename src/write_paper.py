@@ -594,11 +594,11 @@ and length" as the entry bar for topological claims about transformers.
 """
 
 
-FIG_REGIME_MAP = "results/fig_regime_map.png"
-FIG_SUPPRESSION = "results/fig_suppression.png"
+FIG_REGIME_MAP = "figures/fig_regime_map.png"
+FIG_SUPPRESSION = "figures/fig_suppression.png"
 
 
-def main(out="PAPER.md"):
+def main(out="paper/PAPER.md"):
     def j(name):
         return json.load(open(f"results/{name}.json"))
 

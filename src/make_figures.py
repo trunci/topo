@@ -3,10 +3,10 @@
 Same provenance discipline as write_paper.py: every plotted value is read from
 a results/ file; no number is hand-typed.
 
-* results/fig_regime_map.png   -- Fig 1: topology vs confidence AUC across the
-                                  six failure-prediction regimes (dumbbell plot)
-* results/fig_suppression.png  -- Fig 2: marginal vs partial view of per-head
-                                  H1 persistence against induction strength
+* paper/figures/fig_regime_map.png   -- topology vs confidence AUC across the
+                                        eight failure-prediction regimes
+* paper/figures/fig_suppression.png  -- marginal vs partial view of per-head
+                                        H1 persistence against induction strength
 
 Regenerate with: uv run python -m src.make_figures
 """
@@ -45,7 +45,7 @@ def _j(name):
     return json.load(open(f"results/{name}.json"))
 
 
-def fig_regime_map(out="results/fig_regime_map.png"):
+def fig_regime_map(out="paper/figures/fig_regime_map.png"):
     e7 = _j("exp7_stats")["all_items"]
     e13 = _j("exp13_stats")["all_items"]
     e13r = _j("exp13_replication_stats")["combined"]["hop5_only"]
@@ -122,7 +122,7 @@ def fig_regime_map(out="results/fig_regime_map.png"):
     print(f"wrote {out}")
 
 
-def fig_suppression(out="results/fig_suppression.png"):
+def fig_suppression(out="paper/figures/fig_suppression.png"):
     s = _j("exp3_stats")
     df = pd.read_parquet("results/exp3.parquet")
     controls = s["controls"]

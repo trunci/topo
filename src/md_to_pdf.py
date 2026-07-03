@@ -51,7 +51,7 @@ table, pre, figure { page-break-inside: avoid; }
 """
 
 
-def main(src="PAPER.md", out="PAPER.pdf"):
+def main(src="paper/PAPER.md", out="paper/PAPER.pdf"):
     root = pathlib.Path(__file__).resolve().parent.parent
     src_p, out_p = root / src, root / out
     text = src_p.read_text(encoding="utf-8")
@@ -63,7 +63,8 @@ def main(src="PAPER.md", out="PAPER.pdf"):
         f"<!doctype html><html><head><meta charset='utf-8'>"
         f"<style>{CSS}</style></head><body>{body}</body></html>"
     )
-    html_p = root / (out_p.stem + ".html")
+    # HTML lives beside the markdown so relative figure paths resolve
+    html_p = out_p.parent / (out_p.stem + ".html")
     html_p.write_text(html, encoding="utf-8")
 
     subprocess.run(
