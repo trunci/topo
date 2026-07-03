@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset='utf-8'><style>
-@page { size: A4; margin: 22mm 20mm; }
+@page { size: A4; margin: 25.5mm; }  /* arXiv requires >= 1in (25.4mm) margins */
 html { -webkit-print-color-adjust: exact; }
 body {
   font-family: "Charter", "Georgia", "Times New Roman", serif;
@@ -48,14 +48,17 @@ statistics do not — a suppression effect invisible to marginal correlation
 (ΔR² = 0.074, nested-F p = 0.00044; replicated in a second model) — and ablating
 cycle edges causally damages induction behaviour at budget-matched controls, though the
 effect is budget-sensitive and not universal across scale. (2) As a failure predictor,
-topology is <em>regime-conditional</em>: redundant with the model's own confidence when
-accuracy is high (0.77–0.85), but near-perfect when a small model is at its capability
-ceiling on synthetic multi-hop reasoning (accuracy 0.525: topology AUC 0.930 vs
-confidence 0.681; at five hops 1.000 vs 0.617; replicated across
-three seeds and a second model). (3) The mechanism is scale-dependent: at 0.5B
-parameters topology proxies attention entropy (r = 0.925, adding ΔAUC =
-0.000 beyond first-order controls), while at 1.5B it adds ΔAUC = 0.216
-beyond those controls (p = 0.0312). <strong>Everything else falls.</strong> Topology loses to
+topology is <em>regime-conditional</em>, and the regime is narrow: clean, template-generated
+reasoning at a model's capability ceiling — it does not include naturalistic QA.
+Within that regime topology is near-perfect where confidence fails (accuracy
+0.525: topology AUC 0.930 vs confidence 0.681; at five hops 1.000
+vs 0.617; replicated across three seeds and a second model); on easy tasks
+(accuracy 0.77–0.85) it is fully redundant with confidence. (3) The
+mechanism is scale-dependent — and deflates the headline number: at 0.5B parameters
+(the scale of the 1.000-vs-0.617 result) topology proxies attention
+entropy (r = 0.925, adding ΔAUC = 0.000 beyond first-order controls),
+while at 1.5B it adds ΔAUC = 0.216 beyond those controls (item-level
+bootstrap 95% CI [0.147, 0.285]). <strong>Everything else falls.</strong> Topology loses to
 raw attention magnitude as a circuit attributor (AUC 0.501 vs 0.976 on
 induction; 0.458 vs 0.963 on IOI), adds nothing as a pruning criterion, and its
 apparent "information-flow" signal decomposes first into graph connectivity and then
@@ -67,11 +70,9 @@ TOHA's engineered 0.71), remain at chance after length residualization
 gold contexts (0.499). Nor is the boundary merely our featurization:
 reimplementing TOHA's own MTop-Div (generation-time answer-to-prompt divergence)
 on the same items also fails to beat chance under fold-internal head selection
-(0.560 distractor / 0.504 gold). The regime where attention topology beats
-confidence is real but narrow: clean, template-generated reasoning at the model's
-capability boundary. We offer the audit methodology — control first-order statistics,
-verify instruments, benchmark against magnitude and confidence — as the durable
-contribution.</p>
+(0.560 distractor / 0.504 gold). We offer the audit methodology — control
+first-order statistics, verify instruments, benchmark against magnitude and
+confidence — as the durable contribution.</p>
 <h2>1. Introduction</h2>
 <p>The attention matrices of a transformer induce, at every head, a weighted directed
 graph over token positions. A growing literature applies topological data analysis to
@@ -129,9 +130,9 @@ narrower than proposed.</p>
 <p><strong>Topological probes of attention.</strong> Closest to our failure-prediction experiments is
 TOHA (Bazarova et al., ACL 2026; arXiv:2504.10063v3), which engineers topological
 features of attention maps for hallucination detection and reports AUROC 0.71 on
-HotpotQA with Mistral-7B-Instruct-v0.1 (the HotpotQA numbers appear in the v3
-revision) — the setting of our Experiments 14–16, which use v0.3 of the same model
-(§7). TOHA validates
+HotpotQA with Mistral-7B-Instruct-v0.1 (a result added in the v3 revision) — the
+setting our Experiments 14–16 target, using v0.3 of the same model (§7). TOHA
+validates
 the <em>direction</em>; our contribution relative to it is the regime map (when topology adds
 beyond confidence and when it cannot), head-to-head nulls on their own benchmark for
 both hand-specified H1 features and a reimplementation of their MTop-Div metric
@@ -164,7 +165,11 @@ length and entity count. The confidence baseline is the answer-token logit margi
 <p><strong>Verdict rules.</strong> Each experiment pre-registers a GREEN/PARTIAL/RED rule before the
 run (e.g., "GREEN iff ΔR² ≥ 0.02 <em>and</em> nested-F p &lt; 0.05"; "GREEN iff topology adds
 AUC beyond confidence at paired-Wilcoxon p &lt; 0.05"). All verdicts are machine-checked
-fields in per-experiment JSON files, from which this document is generated.</p>
+fields in per-experiment JSON files, from which this document is generated.
+Pre-registration is verifiable in the repository history: each experiment's code and
+verdict rule are committed before its results land — for the HotpotQA experiments,
+pre-registration commits <code>16ceb0d</code> / <code>b065b24</code> / <code>32e1169</code> precede results commits
+<code>436d40f</code> / <code>037834f</code> / <code>f9d9a6b</code> (Experiments 14 / 15 / 16 respectively).</p>
 <p><strong>Models and tasks.</strong> Qwen2.5-0.5B/1.5B-Instruct (synthetic kinship/ordering
 reasoning, 1–5 hops), GPT-2 small/medium and distilgpt2 (induction, previous-token,
 duplicate-token, IOI circuits), Mistral-7B-Instruct-v0.3 (HotpotQA bridge questions,
@@ -467,7 +472,11 @@ direction. What topology <em>measures</em> appears to change with capacity.</p>
 <p>Runs are small and CPU/single-GPU scale: circuits on GPT-2-class models (n_seqs ≤ 12,
 single seeds for the causal budget sweeps), synthetic reasoning on 0.5B/1.5B models,
 and n = 200 items for each HotpotQA condition. The confidence baseline is a logit
-margin, not a calibrated probability. The sheaf construction is non-learned. Gold-only
+margin, not a calibrated probability or a sampling-based measure such as semantic
+entropy (Farquhar et al., 2024). On naturalistic QA this only makes our null
+conservative — topology is at chance even against the weak baseline — but in the
+synthetic regime where topology wins, a stronger sampled baseline could narrow the
+reported margins; we have not tested one. The sheaf construction is non-learned. Gold-only
 accuracy (0.650) sits above the deep-miscalibration band where the synthetic effect
 is strongest, so Experiment 15 jointly tests "real task + easier regime"; its
 supervised head-selection probe is far simpler than TOHA's featurization. Experiment
@@ -476,9 +485,12 @@ replication of their protocol: we use greedy decoding, substring-match correctne
 labels rather than annotated hallucination labels, bridge questions only, and
 fold-internal head selection on ≤160 training items; and our runs use
 Mistral-7B-Instruct-v0.3 where TOHA's published numbers are for v0.1. Experiment 16
-is a from-paper reimplementation of the MTop-Div metric rather than a run of TOHA's
+is a from-paper reimplementation of the MTop-Div metric — built to the paper's
+definition with unit-tested MST equivalence, so that feature extraction ran inside
+the same audited pipeline as Experiments 14–15 — rather than a run of TOHA's
 released artifact; a null here bounds MTop-Div <em>under our
-evaluation</em>, not TOHA's published result. All synthetic results use two task
+evaluation</em>, not TOHA's published result, and the artifact-level comparison is the
+follow-up flagged in §6. All synthetic results use two task
 families (kinship, ordering) and template prompts. The fold-level Wilcoxon p-values
 (0.0312) sit at the resolution floor of a five-fold test (§3); the item-level
 bootstrap CIs of §5.3, whose lower bounds stay well clear of zero, carry the

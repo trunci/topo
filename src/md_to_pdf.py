@@ -16,7 +16,7 @@ import markdown
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 CSS = """
-@page { size: A4; margin: 22mm 20mm; }
+@page { size: A4; margin: 25.5mm; }  /* arXiv requires >= 1in (25.4mm) margins */
 html { -webkit-print-color-adjust: exact; }
 body {
   font-family: "Charter", "Georgia", "Times New Roman", serif;

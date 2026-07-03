@@ -1,10 +1,11 @@
 """Experiment 14: failure prediction on real QA (HotpotQA bridge).
 
-Direct comparison to TOHA (Bazarova et al., ACL 2026, arXiv 2504.10063):
-same model (Mistral-7B-Instruct-v0.3), same benchmark (HotpotQA bridge),
-same task (predict whether the model's answer is correct from internal signals).
+Direct comparison to TOHA (Bazarova et al., ACL 2026, arXiv 2504.10063v3):
+same model family (Mistral-7B-Instruct; we run v0.3, TOHA's published numbers
+are for v0.1), same benchmark (HotpotQA bridge), same task (predict whether the
+model's answer is correct from internal signals).
 
-TOHA reports AUROC 0.71 on HotpotQA/Mistral-7B.
+TOHA reports AUROC 0.71 on HotpotQA/Mistral-7B (Table 3, added in arXiv v3).
 KL-divergence probe (arXiv 2605.05025) reports AUROC 0.78-0.80.
 
 Our additions beyond the literature:
@@ -12,7 +13,7 @@ Our additions beyond the literature:
    to test whether topology is most useful when accuracy is near 50%.
 2. Controls decomposition: does topology add beyond first-order attention stats?
 
-Model: mistralai/Mistral-7B-Instruct-v0.3 (same as TOHA).
+Model: mistralai/Mistral-7B-Instruct-v0.3 (TOHA evaluates v0.1; see paper §7).
 Auto-detects CUDA; uses bfloat16 on GPU, float32 on CPU.
 Attention matrices always cast to float32 before topology computation.
 
