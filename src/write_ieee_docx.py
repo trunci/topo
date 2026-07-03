@@ -240,7 +240,6 @@ def main():
             p.paragraph_format.first_line_indent = Inches(0)
             add_runs(p, f"[{ref_counter}] {payload}", size=8)
         elif kind == "img":
-            fig_counter += 1
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.add_run().add_picture(str(PAPER_MD.parent / payload),
