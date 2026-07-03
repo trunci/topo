@@ -1,0 +1,52 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "slice": "hop5, pooled seeds 0-2",
+  "n_items": 180,
+  "base_rate_correct": 0.49444444444444446,
+  "auc": {
+    "topology_only": {
+      "mean_auc": 0.9888888888888889,
+      "std_auc": 0.022222222222222233,
+      "n_folds": 5,
+      "folds": [
+        1.0,
+        1.0,
+        0.9444444444444444,
+        1.0,
+        1.0
+      ]
+    },
+    "controls_only": {
+      "mean_auc": 0.9907407407407408,
+      "std_auc": 0.01851851851851851,
+      "n_folds": 5,
+      "folds": [
+        1.0,
+        1.0,
+        0.9537037037037037,
+        1.0,
+        1.0
+      ]
+    },
+    "controls_plus_topology": {
+      "mean_auc": 0.9895061728395061,
+      "std_auc": 0.02098765432098766,
+      "n_folds": 5,
+      "folds": [
+        1.0,
+        1.0,
+        0.9475308641975309,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "delta_auc_topo_beyond_controls": {
+    "median": 0.0,
+    "wilcoxon_p": 1.0
+  },
+  "pearson_topo_mean_persist_vs_attn_entropy": {
+    "r": 0.9251058842536519,
+    "p": 8.950133445336663e-77
+  }
+}

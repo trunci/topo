@@ -1,0 +1,45 @@
+{
+  "method": "out-of-fold predictions from StratifiedKFold(5, seed 0) logistic probes; paired item bootstrap, B=10000, rng seed 0; one-sided ASL = P(delta<=0), add-one smoothed",
+  "seed0_topo_beyond_confidence": {
+    "n_items": 120,
+    "auc_baseline": 0.6903369534948482,
+    "auc_full": 0.9303815093288778,
+    "delta_auc": 0.2400445558340295,
+    "bootstrap": {
+      "B": 10000,
+      "ci95": [
+        0.14450016161429047,
+        0.34288177805448516
+      ],
+      "p_one_sided": 9.999000099990002e-05
+    }
+  },
+  "pooled3_topo_beyond_confidence": {
+    "n_items": 360,
+    "auc_baseline": 0.7423049612546695,
+    "auc_full": 0.9544009138340898,
+    "delta_auc": 0.21209595257942027,
+    "bootstrap": {
+      "B": 10000,
+      "ci95": [
+        0.1627846719342075,
+        0.2642176025333988
+      ],
+      "p_one_sided": 9.999000099990002e-05
+    }
+  },
+  "b1p5_topo_beyond_controls": {
+    "n_items": 180,
+    "auc_baseline": 0.7352759599950611,
+    "auc_full": 0.949746882331152,
+    "delta_auc": 0.21447092233609089,
+    "bootstrap": {
+      "B": 10000,
+      "ci95": [
+        0.14735557370981833,
+        0.28546632619811546
+      ],
+      "p_one_sided": 9.999000099990002e-05
+    }
+  }
+}
